@@ -217,9 +217,14 @@ options.trim.tilt_angle_deg = tilt_angle_deg;
 options.trim.n_speed_points = 6;
 options.trim.speed_start_mps = 40;
 options.trim.speed_step_mps = 10;
-options.trim.trim_max_iter = 10000;
-options.trim.stability_max_iter = 10000;
+options.trim.trim_max_iter = 25;
+options.trim.stability_max_iter = 0;
 options.trim.keep_generated_script = false;
+options.trim.tol = 1e-7;
+options.trim.fd_step = 1e-4;
+options.trim.stability_fd_step = 1e-2;
+options.trim.control_fd_step_rad = 1e-2;
+options.trim.damping = 0.80;
 
 options.trim.uvw_earth_mps = state.velo_body;
 options.trim.pqr_rad_s = state.angular_velocity_body;
@@ -307,12 +312,12 @@ legacy = legacy_user;
 if run_trim_and_stability
     trim_entry = fullfile(root, "RUN_TRIM_AND_STABILITY.m");
     if exist(trim_entry, "file") ~= 2
-        error("The legacy trim/stability solver is not included in this public no-data package.");
+        error("RUN_TRIM_AND_STABILITY.m not found at project root.");
     end
-    trim_results = RUN_TRIM_AND_STABILITY(cfg, options.trim);
+    trim_results = RUN_TRIM_AND_STABILITY(state, vehicle, cfg, model, options.trim);
 else
     trim_results = [];
-    fprintf("Full trim/stability sweep skipped. The public no-data package does not include the legacy trim solver.\n\n");
+    fprintf("Full trim/stability sweep skipped. Set run_trim_and_stability = true, or run RUN_TRIM_AND_STABILITY directly.\n\n");
 end
 
 airframe_forces = evtol_airframe_forces(vehicle.airframe, state, state.control, vehicle.rho);

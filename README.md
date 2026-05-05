@@ -8,6 +8,7 @@ This public version is intentionally lightweight:
 - no legacy original script
 - no required examples
 - default analytic rotor and airframe models run without a `data/` folder
+- includes a clean public trim/stability/control-derivative workflow
 
 The main user interface is:
 
@@ -77,18 +78,43 @@ options.trim.initial.pitch_rad
 options.trim.initial.roll_rad
 ```
 
-The public repository does not include the original legacy trim/stability
-solver. That solver depended on the private original program and data. The
-clean public code keeps the configuration, model loading, rotor/airframe
-switches, and default force-model path ready for further open refactoring.
+Trim and linearization can be run directly:
+
+```matlab
+trim_results = RUN_TRIM_AND_STABILITY
+```
+
+Or from `RUN_ME.m`:
+
+```matlab
+run_trim_and_stability = true;
+```
+
+The public trim workflow returns the trim table, stacked stability matrices,
+rotor-control derivatives, and elevator/rudder/aileron control derivatives:
+
+```matlab
+trim_results.Mttt
+trim_results.MMA
+trim_results.MMB
+trim_results.A
+trim_results.B_all
+trim_results.derivatives
+trim_results.fixed_surface_derivatives
+```
+
+This is a cleaned implementation of the trim/stability path. It uses the public
+rotor and airframe switches and does not require the original legacy script.
 
 ## Layout
 
 ```text
 .
 |-- RUN_ME.m
+|-- RUN_TRIM_AND_STABILITY.m
 |-- README.md
 `-- src/
+    |-- evtol_run_trim_stability.m
     |-- evtol_configure_vehicle_models.m
     |-- evtol_airframe_forces.m
     |-- evtol_default_config.m
