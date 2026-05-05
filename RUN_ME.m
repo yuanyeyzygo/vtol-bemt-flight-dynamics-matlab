@@ -218,13 +218,16 @@ options.trim.n_speed_points = 6;
 options.trim.speed_start_mps = 40;
 options.trim.speed_step_mps = 10;
 options.trim.trim_max_iter = 25;
-options.trim.stability_max_iter = 0;
+options.trim.stability_max_iter = 15;
 options.trim.keep_generated_script = false;
 options.trim.tol = 1e-7;
 options.trim.fd_step = 1e-4;
 options.trim.stability_fd_step = 1e-2;
 options.trim.control_fd_step_rad = 1e-2;
 options.trim.damping = 0.80;
+options.trim.retrim_rotor_states_for_derivatives = true;
+options.trim.rotor_state_tol = 1e-9;
+options.trim.rotor_state_damping = 0.80;
 
 options.trim.uvw_earth_mps = state.velo_body;
 options.trim.pqr_rad_s = state.angular_velocity_body;

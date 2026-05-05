@@ -206,6 +206,7 @@ for n = 1:10
         step = step_control_rad;
     end
 
+    x = retrim_rotor_states_for_derivative(x, v, pqr, state, vehicle, options, rotor_state_len);
     eval_p = evaluate_vehicle_body(x, v, pqr, state, vehicle, options, rotor_state_len);
     derivatives(n, :) = ((eval_p.total_forces - base_forces) ./ step).';
 end
@@ -219,6 +220,61 @@ for n = 1:3
 end
 
 [A, B_rotor, B_all] = assemble_state_space(derivatives, fixed_derivatives, trim_vector, velo_body, vehicle, rotor_state_len);
+end
+
+function x = retrim_rotor_states_for_derivative(x, velo_body, pqr, state, vehicle, options, rotor_state_len)
+if ~options.retrim_rotor_states_for_derivatives || options.stability_max_iter <= 0
+    return;
+end
+
+rotor_count = numel(vehicle.rotors);
+for i = 1:rotor_count
+    idx = (i - 1) * rotor_state_len + (1:rotor_state_len);
+    for iter = 1:options.stability_max_iter
+        err0 = rotor_state_residual(x, idx, i, velo_body, pqr, vehicle, options, rotor_state_len);
+        if norm(err0, 2) < options.rotor_state_tol
+            break;
+        end
+        J = finite_difference_rotor_state_jacobian( ...
+            @(xi) rotor_state_residual_with_state(x, idx, i, xi, velo_body, pqr, vehicle, options, rotor_state_len), ...
+            x(idx), err0, options.fd_step);
+        dx = solve_linear_step(J, err0);
+        if any(~isfinite(dx))
+            break;
+        end
+        x(idx) = x(idx) + options.rotor_state_damping * dx;
+    end
+end
+
+if isempty(state)
+    error("Invalid state input.");
+end
+end
+
+function err = rotor_state_residual_with_state(x, idx, rotor_index, rotor_state, velo_body, pqr, vehicle, options, rotor_state_len)
+x(idx) = rotor_state(:);
+err = rotor_state_residual(x, idx, rotor_index, velo_body, pqr, vehicle, options, rotor_state_len);
+end
+
+function err = rotor_state_residual(x, idx, rotor_index, velo_body, pqr, vehicle, options, rotor_state_len)
+theta_deg = rotor_theta_deg(x, vehicle, rotor_state_len);
+err = rotor_bemt_periodic( ...
+    x(idx), vehicle.rotors(rotor_index), velo_body, pqr, ...
+    options.acceleration_body, options.angular_acceleration_body, theta_deg(rotor_index));
+err = err(:);
+end
+
+function J = finite_difference_rotor_state_jacobian(fun, x, r0, fd_step)
+n = numel(x);
+m = numel(r0);
+J = zeros(m, n);
+for i = 1:n
+    dx = fd_step * max(1, abs(x(i)));
+    xp = x;
+    xp(i) = xp(i) + dx;
+    rp = fun(xp);
+    J(:, i) = (rp(:) - r0(:)) / dx;
+end
 end
 
 function [A, B_rotor, B_all] = assemble_state_space(derivatives, fixed_derivatives, trim_vector, velo_body, vehicle, rotor_state_len)
@@ -607,12 +663,15 @@ if ~isfield(options, "n_speed_points"), options.n_speed_points = 1; end
 if ~isfield(options, "speed_start_mps"), options.speed_start_mps = 40; end
 if ~isfield(options, "speed_step_mps"), options.speed_step_mps = 10; end
 if ~isfield(options, "trim_max_iter"), options.trim_max_iter = 25; end
-if ~isfield(options, "stability_max_iter"), options.stability_max_iter = 0; end %#ok<NASGU>
+if ~isfield(options, "stability_max_iter"), options.stability_max_iter = 15; end
 if ~isfield(options, "tol"), options.tol = 1e-7; end
 if ~isfield(options, "fd_step"), options.fd_step = 1e-4; end
 if ~isfield(options, "stability_fd_step"), options.stability_fd_step = 1e-2; end
 if ~isfield(options, "control_fd_step_rad"), options.control_fd_step_rad = 1e-2; end
 if ~isfield(options, "damping"), options.damping = 0.80; end
+if ~isfield(options, "retrim_rotor_states_for_derivatives"), options.retrim_rotor_states_for_derivatives = true; end
+if ~isfield(options, "rotor_state_tol"), options.rotor_state_tol = 1e-9; end
+if ~isfield(options, "rotor_state_damping"), options.rotor_state_damping = 0.80; end
 if ~isfield(options, "uvw_earth_mps"), options.uvw_earth_mps = [40; 0; 0]; end
 if ~isfield(options, "pqr_rad_s"), options.pqr_rad_s = [0; 0; 0]; end
 if ~isfield(options, "acceleration_body"), options.acceleration_body = [0; 0; 0]; end

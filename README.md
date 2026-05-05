@@ -78,6 +78,18 @@ options.trim.initial.pitch_rad
 options.trim.initial.roll_rad
 ```
 
+For stability derivatives, rotor flapping and induced-velocity states are
+re-solved after each perturbation by default:
+
+```matlab
+options.trim.retrim_rotor_states_for_derivatives = true;
+options.trim.stability_max_iter = 15;
+```
+
+This matches the intent of the original workflow, where each perturbed
+condition first re-established rotor periodic states before computing force
+and moment derivatives.
+
 Trim and linearization can be run directly:
 
 ```matlab
