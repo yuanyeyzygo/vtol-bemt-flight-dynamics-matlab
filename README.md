@@ -1,80 +1,224 @@
 # VTOL BEMT Flight-Dynamics MATLAB
 
-Clean MATLAB interface for an eVTOL / VTOL BEMT flight-dynamics model.
+MATLAB implementation of an eVTOL / VTOL trim, BEMT rotor, stability, and
+control-derivative calculation.
 
-This public version is intentionally lightweight:
+This public version is based directly on the original `BEMTFLAP` calculation
+flow. The main equations, trim loop, rotor flapping solve, stability
+derivatives, and control-derivative workflow are kept in
+`src/BEMTFLAP_SWITCHED.m`. The added layer is a set of switches in `RUN_ME.m`
+that choose private lookup data or built-in public defaults.
 
-- no bundled private lookup data
-- no legacy original script
-- no required examples
-- default analytic rotor and airframe models run without a `data/` folder
-- includes a clean public trim/stability/control-derivative workflow
+Private lookup data are not included. With all switches set to `"default"`, the
+program can run without a `data/` folder.
 
-The main user interface is:
+## Run
+
+Open MATLAB in this folder and run:
 
 ```matlab
 RUN_ME
 ```
 
-By default, `RUN_ME` uses the no-lookup analytic model profile. This means the
-repository can be cloned or downloaded and run without any lookup tables.
-
-## Main Inputs
-
-Most settings are edited in `RUN_ME.m`.
-
-The tilt angle is defined once near the top:
+or:
 
 ```matlab
-tilt_angle_deg = 60.0;
+RUN_TRIM_AND_STABILITY
 ```
 
-Rotor geometry and installation are defined through:
+`RUN_TRIM_AND_STABILITY.m` is only a convenience entry point; all settings are
+edited in `RUN_ME.m`.
+
+The latest run is saved to:
+
+```text
+last_run_results.mat
+```
+
+The main output variable is:
 
 ```matlab
-rotor_count
-rotor_geometry_model
-rotor_positions_m
-rotational_direction
-rotor_template.R
-rotor_template.Nb
-rotor_template.omega
-rotor_template.tilt_angle_deg
+trim_results
 ```
 
-By default, the public no-data profile uses `rotor_geometry_model =
-'legacy_default'`. This follows the original `BEMTFLAP.m`
-`rotor_locations()` / `local_transform()` coordinate convention, with built-in
-scalar fallback values so the package runs without private geometry tables.
-
-Lookup mode uses `rotor_geometry_model = 'legacy_lookup'`, which reads the
-original CG and rotor geometry tables and produces the same local rotor
-locations as `BEMTFLAP.m`.
-
-The default public profile uses:
+It contains:
 
 ```matlab
-rotor_template.airfoil_model  = 'linear';
-rotor_template.chord_model    = 'linear';
-rotor_template.pretwist_model = 'linear';
-airframe.model                = 'component_bem';
+trim_results.trim_table
+trim_results.stability_A
+trim_results.control_B
+trim_results.final_trim_var
+trim_results.last_eigenvalues
+trim_results.rotor_locations_m
 ```
 
-## Optional Lookup Mode
+## Switches
 
-The code still supports lookup data if you add your own tables locally. To use
-the lookup profile, run:
+The switches are at the top of `RUN_ME.m`:
 
 ```matlab
-RUN_ME("run", "user")
+data_mode = "default";  % "default" or "lookup"
+
+cfg.switch.geometry = data_mode;
+cfg.switch.chord = data_mode;
+cfg.switch.pretwist = data_mode;
+cfg.switch.airfoil = data_mode;
+cfg.switch.fuselage = data_mode;
+cfg.switch.controls = data_mode;
 ```
 
-Then provide a local `data/` folder with the expected CL/CD, chord, pretwist,
-and airframe lookup files.
+Use `"default"` for the open-source no-data model. Use `"lookup"` when the
+private lookup tables are available locally in `data/`.
 
-For compatibility with the original `BEMTFLAP.m` workflow, lookup mode also
-expects these local geometry tables when `rotor_geometry_model =
-'legacy_lookup'` in `RUN_ME.m`:
+## Main Editable Settings
+
+In `RUN_ME.m`:
+
+```matlab
+cfg.trim.tilt_angle_deg = 90;
+cfg.trim.speed_mps = [0 10 20];
+cfg.trim.max_iterations = 10000;
+cfg.stability.max_iterations = 10000;
+cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
+```
+
+`cfg.rotor.airfoil_section_edges` gives the nondimensional radial cutoff
+locations for the six rotor airfoil sections. It must contain five increasing
+values between 0 and 1.
+
+Trim initial guesses are also in `RUN_ME.m`:
+
+```matlab
+cfg.trim.initial.rotor_state
+cfg.trim.initial.collective_deg
+cfg.trim.initial.longitudinal_deg
+cfg.trim.initial.lateral_deg
+cfg.trim.initial.yaw_deg
+cfg.trim.initial.pitch_rad
+cfg.trim.initial.roll_rad
+```
+
+`rotor_state` is repeated for the six rotors. Its length must be `2*Nb+1`:
+first `Nb` flap angles, next `Nb` flap rates, and the last entry is the
+induced velocity initial guess. In `RUN_ME.m` it is generated from
+`cfg.rotor.blade_count`.
+
+## Lookup Data
+
+If a switch is set to `"lookup"`, place the corresponding private files in a
+local `data/` folder next to `RUN_ME.m`.
+
+For a custom location, edit this line in `RUN_ME.m`:
+
+```matlab
+data_dir = fullfile(root, 'data');
+```
+
+Expected lookup files include:
+
+```text
+CS1_cl.txt ... CS6_cl.txt
+CS1_cd.txt ... CS6_cd.txt
+chord_interp.mat
+pretwist_interp.mat
+x_cg.mat
+z_cg.mat
+first_rotor_x.mat
+first_rotor_z.mat
+Fuselage_cd.txt
+Fuselage_cl.txt
+Fuselage_cm.txt
+Fuselage_cc.txt
+Fuselage_cn.txt
+Fuselage_cll.txt
+Fuselage_elevator.txt
+Fuselage_rudder.txt
+Fuselage_roll.txt
+```
+
+`model_gpr_uvw.mat` is not required.
+
+## Lookup Table Formats
+
+All text files may be tab- or space-delimited. Angles are in degrees. Each
+rectangular grid point should appear exactly once; missing or duplicated grid
+points will produce an error when the lookup object is built.
+
+### Rotor Airfoil CL/CD Tables
+
+Files:
+
+```text
+CS1_cl.txt ... CS6_cl.txt
+CS1_cd.txt ... CS6_cd.txt
+```
+
+Format:
+
+```text
+Mach_1   Mach_2   Mach_3   ...
+alpha_1  value(alpha_1,Mach_1)  value(alpha_1,Mach_2)  value(alpha_1,Mach_3) ...
+alpha_2  value(alpha_2,Mach_1)  value(alpha_2,Mach_2)  value(alpha_2,Mach_3) ...
+...
+```
+
+Example:
+
+```text
+0.01    0.05    0.13    0.30
+-180    0       0       0       0
+-160    0.647857 0.647857 0.647857 0.647857
+```
+
+The first row lists Mach grid points. Every following row starts with
+`alpha_deg`; the remaining columns are the coefficient values at each Mach.
+The same format is used for both CL and CD. The rotor radial section selection
+is set in `RUN_ME.m` by:
+
+```matlab
+cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
+```
+
+With the default values, the section mapping is:
+
+```text
+x < 0.25  -> CS1
+x < 0.40  -> CS2
+x < 0.50  -> CS3
+x < 0.80  -> CS4
+x < 0.92  -> CS5
+else      -> CS6
+```
+
+### Chord and Pretwist MAT Files
+
+Files:
+
+```text
+chord_interp.mat
+pretwist_interp.mat
+```
+
+`chord_interp.mat` must contain a callable variable named `F`:
+
+```matlab
+chord_ratio = F(x);
+```
+
+where `x = r/R` is the nondimensional blade radial station. The original code
+uses `F(x) * R` as the local chord length.
+
+`pretwist_interp.mat` must contain a callable variable named `pre_twist`:
+
+```matlab
+twist_deg = pre_twist(x);
+```
+
+The twist value is in degrees and is converted inside the BEMT calculation.
+
+### CG and Front-Rotor Position MAT Files
+
+Files:
 
 ```text
 x_cg.mat
@@ -83,63 +227,97 @@ first_rotor_x.mat
 first_rotor_z.mat
 ```
 
-The public zip does not include those private geometry/data files.
-
-## Trim Initial Values
-
-Trim initial values are collected in `RUN_ME.m` under `options.trim.initial`:
+Each file must contain a callable variable with the same name as the file:
 
 ```matlab
-options.trim.initial.beta_rad
-options.trim.initial.beta_dot_rad
-options.trim.initial.induced_velocity
-options.trim.initial.collective_deg
-options.trim.initial.longitudinal_deg
-options.trim.initial.lateral_deg
-options.trim.initial.yaw_deg
-options.trim.initial.pitch_rad
-options.trim.initial.roll_rad
+x_cg_mm          = x_cg(tilt_angle_deg);
+z_cg_mm          = z_cg(tilt_angle_deg);
+front_rotor_x_mm = first_rotor_x(tilt_angle_deg);
+front_rotor_z_mm = first_rotor_z(tilt_angle_deg);
 ```
 
-For stability derivatives, rotor flapping and induced-velocity states are
-re-solved after each perturbation by default:
+The returned values are in millimeters, matching the original `BEMTFLAP`
+geometry convention.
+
+### Fuselage/Airframe Coefficient Tables
+
+Files:
+
+```text
+Fuselage_cd.txt
+Fuselage_cl.txt
+Fuselage_cm.txt
+Fuselage_cc.txt
+Fuselage_cn.txt
+Fuselage_cll.txt
+```
+
+Format: three columns per row.
+
+```text
+tilt_angle_deg   alpha_deg   coefficient
+```
+
+Example:
+
+```text
+0   -12   0.228091962
+0    -9   0.133751702
+0    -6   0.073399029
+```
+
+The lookup is built as:
 
 ```matlab
-options.trim.retrim_rotor_states_for_derivatives = true;
-options.trim.stability_max_iter = 15;
+coefficient = table.CD(tilt_angle_deg, alpha_deg);
 ```
 
-This matches the intent of the original workflow, where each perturbed
-condition first re-established rotor periodic states before computing force
-and moment derivatives.
+The file name determines which coefficient is being loaded: `Fuselage_cd.txt`
+for CD, `Fuselage_cl.txt` for CL, and so on.
 
-Trim and linearization can be run directly:
+### Control Surface Increment Tables
+
+Files:
+
+```text
+Fuselage_elevator.txt
+Fuselage_rudder.txt
+Fuselage_roll.txt
+```
+
+Format: five columns per row.
+
+```text
+deflection_deg   alpha_deg   increment_1   increment_2   increment_3
+```
+
+For `Fuselage_elevator.txt`, the three increments are:
+
+```text
+dCD   dCL   dCM
+```
+
+For `Fuselage_rudder.txt` and `Fuselage_roll.txt`, the three increments are
+used by the original code as:
+
+```text
+dCC   dCN   dCLL
+```
+
+Example:
+
+```text
+-20   -12   -0.034025137   0.051321743   -0.171615501
+-20    -9   -0.013105979   0.142805449   -0.327482425
+```
+
+The lookup call returns a row vector:
 
 ```matlab
-trim_results = RUN_TRIM_AND_STABILITY
+vals = table.eval(deflection_deg, alpha_deg);
 ```
 
-Or from `RUN_ME.m`:
-
-```matlab
-run_trim_and_stability = true;
-```
-
-The public trim workflow returns the trim table, stacked stability matrices,
-rotor-control derivatives, and elevator/rudder/aileron control derivatives:
-
-```matlab
-trim_results.Mttt
-trim_results.MMA
-trim_results.MMB
-trim_results.A
-trim_results.B_all
-trim_results.derivatives
-trim_results.fixed_surface_derivatives
-```
-
-This is a cleaned implementation of the trim/stability path. It uses the public
-rotor and airframe switches and does not require the original legacy script.
+with the increment order shown above.
 
 ## Layout
 
@@ -149,13 +327,8 @@ rotor and airframe switches and does not require the original legacy script.
 |-- RUN_TRIM_AND_STABILITY.m
 |-- README.md
 `-- src/
-    |-- evtol_run_trim_stability.m
-    |-- evtol_configure_vehicle_models.m
-    |-- evtol_airframe_forces.m
-    |-- evtol_default_config.m
-    |-- evtol_load_model_data.m
-    |-- evtol_make_legacy_inputs.m
-    |-- evtol_rotor_locations.m
+    |-- BEMTFLAP_SWITCHED.m
+    |-- CS1_cd_lookup.m
     |-- build_C_lookup_from_txt.m
     `-- build_fuselage_elevator_lookup.m
 ```

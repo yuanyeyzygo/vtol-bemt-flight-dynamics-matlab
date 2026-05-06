@@ -1,0 +1,7 @@
+data/
+legacy/
+examples/
+*.mat
+*.zip
+*.asv
+slprj/
