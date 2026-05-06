@@ -61,6 +61,10 @@ vehicle.cg_m = [0; 0; 0];
 
 %% Rotor array. Existing fields match the single-rotor repository where possible.
 rotor_count = 6;
+rotor_geometry_model = 'legacy_default';
+if ~use_all_default_models
+    rotor_geometry_model = 'legacy_lookup';
+end
 rotor_positions_m = [ ...
     2.377,  6.000, -1.999; ...
     1.900,  2.500, -1.850; ...
@@ -69,6 +73,18 @@ rotor_positions_m = [ ...
     4.754,  2.500, -3.099; ...
     4.754, -2.500, -3.099];
 rotational_direction = [1, -1, 1, -1, 1, -1];
+legacy_airframe_reference_m = [0; 0; 0];
+
+switch lower(rotor_geometry_model)
+    case 'manual'
+        % Use rotor_positions_m above.
+    case 'legacy_default'
+        [rotor_positions_m, legacy_airframe_reference_m] = legacy_geometry(data_dir, tilt_angle_deg, false);
+    case 'legacy_lookup'
+        [rotor_positions_m, legacy_airframe_reference_m] = legacy_geometry(data_dir, tilt_angle_deg, true);
+    otherwise
+        error('rotor_geometry_model must be ''manual'', ''legacy_default'', or ''legacy_lookup''.');
+end
 
 % Rotor model selectors:
 %   airfoil_model  : 'linear' or 'c81txt'
@@ -178,7 +194,7 @@ end
 switch lower(airframe.model)
     case 'lookup_combined'
         airframe.lookup = struct();
-        airframe.lookup.reference_m = [0; 0; 0];
+        airframe.lookup.reference_m = legacy_airframe_reference_m;
         airframe.lookup.tilt_angle_deg = rotor_template.tilt_angle_deg;
         airframe.lookup.area_m2 = 12.95;
         airframe.lookup.chord_m = 1.09;
@@ -252,6 +268,30 @@ options.trim.initial.lateral_deg = 0.0;
 options.trim.initial.yaw_deg = 0.0;
 options.trim.initial.pitch_rad = -0.01;
 options.trim.initial.roll_rad = 0.0;
+
+if ~use_all_default_models && strcmpi(rotor_geometry_model, 'legacy_lookup')
+    % Legacy lookup data and geometry converge much more reliably from the
+    % original first speed-point trim state than from hover-like defaults.
+    options.trim.initial.beta_rad = [ ...
+        -0.0237676515524463; ...
+        -0.0527940831365209; ...
+        -0.0594052160077180; ...
+        -0.0212108230242216; ...
+        -0.00286867143326106];
+    options.trim.initial.beta_dot_rad = [ ...
+        -2.32655529741961; ...
+        -1.51111313004578; ...
+         1.07002205237475; ...
+         2.32640052724664; ...
+         0.170991818129002];
+    options.trim.initial.induced_velocity = 7.4551099268518;
+    options.trim.initial.collective_deg = 37.3186196446432;
+    options.trim.initial.longitudinal_deg = -4.13312203881919;
+    options.trim.initial.lateral_deg = -2.24867032601061;
+    options.trim.initial.yaw_deg = -23.1432946637468;
+    options.trim.initial.pitch_rad = -0.106351231984069;
+    options.trim.initial.roll_rad = 0.154246069634047;
+end
 %% ======================= END USER SETTINGS =======================
 
 setenv("EVTOL_DATA_DIR", data_dir);
@@ -277,6 +317,7 @@ fprintf("Rotor airfoil  : %s\n", vehicle.rotors(1).airfoil_model);
 fprintf("Rotor chord    : %s\n", vehicle.rotors(1).chord_model);
 fprintf("Rotor pretwist : %s\n", vehicle.rotors(1).pretwist_model);
 fprintf("Tilt angle     : %.3f deg\n", cfg.trim.tilt_angle_deg);
+fprintf("Rotor geometry : %s\n", rotor_geometry_model);
 fprintf("Airframe model : %s\n\n", vehicle.airframe.model);
 
 state_user = state;
@@ -411,6 +452,63 @@ components(6).span_m = 1.0;
 components(6).loc_m = [0.0; 0.0; 0.0];
 components(6).cd0 = 0.12;
 components(6).control = 'none';
+end
+
+function [rotor_positions_m, airframe_reference_m] = legacy_geometry(data_dir, tilt_angle_deg, require_lookup)
+%LEGACY_GEOMETRY Match BEMTFLAP_legacy rotor_locations/local_transform.
+%   With lookup data, x_cg/z_cg/first_rotor_x/first_rotor_z are read from
+%   the same tables as the original program. Without data, scalar defaults
+%   taken from the original 60 deg case keep the public package runnable.
+
+[x_cg, z_cg, first_rotor_x, first_rotor_z] = legacy_geometry_sources(data_dir, require_lookup);
+tilt_rad = deg2rad(tilt_angle_deg);
+XCG = [x_cg(tilt_angle_deg), 0, z_cg(tilt_angle_deg)] / 1000;
+
+rotor_abs_m = [ ...
+    2377 + 700 * sin(tilt_rad),  6000, -2000 + cos(tilt_rad); ...
+    first_rotor_x(tilt_angle_deg), 2500, first_rotor_z(tilt_angle_deg); ...
+    first_rotor_x(tilt_angle_deg), -2500, first_rotor_z(tilt_angle_deg); ...
+    2377 + 700 * sin(tilt_rad), -6000, -2000 + cos(tilt_rad); ...
+    4754 + 700 * sin(tilt_rad),  2500, -3100 + cos(tilt_rad); ...
+    4754 + 700 * sin(tilt_rad), -2500, -3100 + cos(tilt_rad)] / 1000;
+
+rotor_positions_m = rotor_abs_m - XCG;
+rotor_positions_m(:, 1) = -rotor_positions_m(:, 1);
+rotor_positions_m(:, 2) = -rotor_positions_m(:, 2);
+
+airframe_reference_m = ([2986.94, 0, -787.15] / 1000 - XCG).';
+airframe_reference_m(1) = -airframe_reference_m(1);
+airframe_reference_m(2) = -airframe_reference_m(2);
+end
+
+function [x_cg, z_cg, first_rotor_x, first_rotor_z] = legacy_geometry_sources(data_dir, require_lookup)
+files = ["x_cg.mat", "z_cg.mat", "first_rotor_x.mat", "first_rotor_z.mat"];
+has_all_files = true;
+for k = 1:numel(files)
+    has_all_files = has_all_files && exist(fullfile(data_dir, files(k)), "file") == 2;
+end
+
+if has_all_files
+    S = load(fullfile(data_dir, "x_cg.mat"), "x_cg");
+    x_cg = S.x_cg;
+    S = load(fullfile(data_dir, "z_cg.mat"), "z_cg");
+    z_cg = S.z_cg;
+    S = load(fullfile(data_dir, "first_rotor_x.mat"), "first_rotor_x");
+    first_rotor_x = S.first_rotor_x;
+    S = load(fullfile(data_dir, "first_rotor_z.mat"), "first_rotor_z");
+    first_rotor_z = S.first_rotor_z;
+    return;
+end
+
+if require_lookup
+    missing = files(arrayfun(@(f) exist(fullfile(data_dir, f), "file") ~= 2, files));
+    error("rotor_geometry_model = 'legacy_lookup' requires local geometry file(s): %s", strjoin(missing, ", "));
+end
+
+x_cg = @(tilt) 3037.64 + 0 .* tilt;
+z_cg = @(tilt) -960.52 + 0 .* tilt;
+first_rotor_x = @(tilt) 453.28 + 0 .* tilt;
+first_rotor_z = @(tilt) -1835.73 + 0 .* tilt;
 end
 
 function cfg = make_compat_cfg(root, data_dir, state, vehicle, options)

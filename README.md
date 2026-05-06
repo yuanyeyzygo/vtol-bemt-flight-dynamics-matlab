@@ -33,6 +33,7 @@ Rotor geometry and installation are defined through:
 
 ```matlab
 rotor_count
+rotor_geometry_model
 rotor_positions_m
 rotational_direction
 rotor_template.R
@@ -40,6 +41,15 @@ rotor_template.Nb
 rotor_template.omega
 rotor_template.tilt_angle_deg
 ```
+
+By default, the public no-data profile uses `rotor_geometry_model =
+'legacy_default'`. This follows the original `BEMTFLAP.m`
+`rotor_locations()` / `local_transform()` coordinate convention, with built-in
+scalar fallback values so the package runs without private geometry tables.
+
+Lookup mode uses `rotor_geometry_model = 'legacy_lookup'`, which reads the
+original CG and rotor geometry tables and produces the same local rotor
+locations as `BEMTFLAP.m`.
 
 The default public profile uses:
 
@@ -61,6 +71,19 @@ RUN_ME("run", "user")
 
 Then provide a local `data/` folder with the expected CL/CD, chord, pretwist,
 and airframe lookup files.
+
+For compatibility with the original `BEMTFLAP.m` workflow, lookup mode also
+expects these local geometry tables when `rotor_geometry_model =
+'legacy_lookup'` in `RUN_ME.m`:
+
+```text
+x_cg.mat
+z_cg.mat
+first_rotor_x.mat
+first_rotor_z.mat
+```
+
+The public zip does not include those private geometry/data files.
 
 ## Trim Initial Values
 
