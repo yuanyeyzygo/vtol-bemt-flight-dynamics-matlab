@@ -1,16 +1,11 @@
 # VTOL BEMT Flight-Dynamics MATLAB
 
-MATLAB implementation of an eVTOL / VTOL trim, BEMT rotor, stability, and
-control-derivative calculation.
+MATLAB implementation of a VTOL/eVTOL trim, rotor BEMT, flapping, stability,
+and control-derivative calculation.
 
-This public version is based directly on the original `BEMTFLAP` calculation
-flow. The main equations, trim loop, rotor flapping solve, stability
-derivatives, and control-derivative workflow are kept in
-`src/BEMTFLAP_SWITCHED.m`. The added layer is a set of switches in `RUN_ME.m`
-that choose private lookup data or built-in public defaults.
-
-Private lookup data are not included. With all switches set to `"default"`, the
-program can run without a `data/` folder.
+The public code can run without private lookup data. Set the switches in
+`RUN_ME.m` to `"default"` for built-in default models, or to `"lookup"` to read
+local text lookup tables from `data/`.
 
 ## Run
 
@@ -20,28 +15,15 @@ Open MATLAB in this folder and run:
 RUN_ME
 ```
 
-or:
+`RUN_TRIM_AND_STABILITY.m` is a convenience wrapper that calls `RUN_ME.m`.
 
-```matlab
-RUN_TRIM_AND_STABILITY
-```
-
-`RUN_TRIM_AND_STABILITY.m` is only a convenience entry point; all settings are
-edited in `RUN_ME.m`.
-
-The latest run is saved to:
+The latest result is saved to:
 
 ```text
 last_run_results.mat
 ```
 
-The main output variable is:
-
-```matlab
-trim_results
-```
-
-It contains:
+The main output variable is `trim_results`, including:
 
 ```matlab
 trim_results.trim_table
@@ -50,16 +32,19 @@ trim_results.control_B
 trim_results.final_trim_var
 trim_results.last_eigenvalues
 trim_results.rotor_locations_m
+trim_results.speed_mps
+trim_results.n_speed_points
 ```
 
-## Switches
+## Main Interface
 
-The switches are at the top of `RUN_ME.m`:
+Edit `RUN_ME.m`.
 
 ```matlab
 data_mode = "default";  % "default" or "lookup"
 
 cfg.switch.geometry = data_mode;
+cfg.switch.rotor_positions = data_mode;
 cfg.switch.chord = data_mode;
 cfg.switch.pretwist = data_mode;
 cfg.switch.airfoil = data_mode;
@@ -67,24 +52,29 @@ cfg.switch.fuselage = data_mode;
 cfg.switch.controls = data_mode;
 ```
 
-Use `"default"` for the open-source no-data model. Use `"lookup"` when the
-private lookup tables are available locally in `data/`.
+Use `"default"` to run without a `data/` folder. Use `"lookup"` when the
+corresponding text files are available in `data/`.
 
-## Main Editable Settings
-
-In `RUN_ME.m`:
+Common trim and rotor settings:
 
 ```matlab
-cfg.trim.tilt_angle_deg = 90;
+cfg.trim.tilt_angle_deg = 90;       % common airframe/CG/fuselage lookup angle
+cfg.rotor.tilt_angle_deg = 90;      % scalar common nacelle tilt
+% cfg.rotor.tilt_angle_deg = [90 90 90 90 85 85]; % per-rotor nacelle tilts
 cfg.trim.speed_mps = [0 10 20];
+cfg.trim.use_previous_solution = true;
 cfg.trim.max_iterations = 10000;
 cfg.stability.max_iterations = 10000;
+cfg.rotor.blade_count = 5;
 cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
 ```
 
-`cfg.rotor.airfoil_section_edges` gives the nondimensional radial cutoff
-locations for the six rotor airfoil sections. It must contain five increasing
-values between 0 and 1.
+When `cfg.trim.use_previous_solution = true`, the first speed uses the initial
+guesses in `RUN_ME.m`, and each later speed starts from the previous converged
+trim vector. This is usually faster for speed sweeps.
+
+`cfg.rotor.airfoil_section_edges` contains five nondimensional radial cutoff
+locations for the six rotor airfoil sections.
 
 Trim initial guesses are also in `RUN_ME.m`:
 
@@ -98,33 +88,34 @@ cfg.trim.initial.pitch_rad
 cfg.trim.initial.roll_rad
 ```
 
-`rotor_state` is repeated for the six rotors. Its length must be `2*Nb+1`:
-first `Nb` flap angles, next `Nb` flap rates, and the last entry is the
-induced velocity initial guess. In `RUN_ME.m` it is generated from
-`cfg.rotor.blade_count`.
+`rotor_state` is repeated for all six rotors. Its length must be `2*Nb+1`:
+first `Nb` flap angles, next `Nb` flap rates, and the final entry is induced
+velocity.
 
-## Lookup Data
+## Lookup Data Folder
 
-If a switch is set to `"lookup"`, place the corresponding private files in a
-local `data/` folder next to `RUN_ME.m`.
+Private lookup data are not included in this repository. If lookup switches
+are enabled, place text files in:
 
-For a custom location, edit this line in `RUN_ME.m`:
+```text
+data/
+```
+
+or edit this line in `RUN_ME.m`:
 
 ```matlab
 data_dir = fullfile(root, 'data');
 ```
 
-Expected lookup files include:
+Expected text files:
 
 ```text
 CS1_cl.txt ... CS6_cl.txt
 CS1_cd.txt ... CS6_cd.txt
-chord_interp.mat
-pretwist_interp.mat
-x_cg.mat
-z_cg.mat
-first_rotor_x.mat
-first_rotor_z.mat
+Chord.txt
+Pretwist.txt
+CG_positions.txt
+Rotor_positions.txt
 Fuselage_cd.txt
 Fuselage_cl.txt
 Fuselage_cm.txt
@@ -136,15 +127,10 @@ Fuselage_rudder.txt
 Fuselage_roll.txt
 ```
 
-`model_gpr_uvw.mat` is not required.
+All text files may be space- or tab-delimited. Angles are in degrees unless
+noted otherwise.
 
-## Lookup Table Formats
-
-All text files may be tab- or space-delimited. Angles are in degrees. Each
-rectangular grid point should appear exactly once; missing or duplicated grid
-points will produce an error when the lookup object is built.
-
-### Rotor Airfoil CL/CD Tables
+## Rotor Airfoil CL/CD Tables
 
 Files:
 
@@ -170,16 +156,17 @@ Example:
 -160    0.647857 0.647857 0.647857 0.647857
 ```
 
-The first row lists Mach grid points. Every following row starts with
-`alpha_deg`; the remaining columns are the coefficient values at each Mach.
-The same format is used for both CL and CD. The rotor radial section selection
-is set in `RUN_ME.m` by:
+The first row is the Mach grid. Each following row starts with `alpha_deg`;
+the remaining columns are coefficient values at the Mach grid points. Do not
+add a text header row.
+
+The section mapping is controlled by:
 
 ```matlab
 cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
 ```
 
-With the default values, the section mapping is:
+With the default values:
 
 ```text
 x < 0.25  -> CS1
@@ -190,56 +177,71 @@ x < 0.92  -> CS5
 else      -> CS6
 ```
 
-### Chord and Pretwist MAT Files
+## Chord and Pretwist Tables
 
 Files:
 
 ```text
-chord_interp.mat
-pretwist_interp.mat
+Chord.txt
+Pretwist.txt
 ```
 
-`chord_interp.mat` must contain a callable variable named `F`:
-
-```matlab
-chord_ratio = F(x);
-```
-
-where `x = r/R` is the nondimensional blade radial station. The original code
-uses `F(x) * R` as the local chord length.
-
-`pretwist_interp.mat` must contain a callable variable named `pre_twist`:
-
-```matlab
-twist_deg = pre_twist(x);
-```
-
-The twist value is in degrees and is converted inside the BEMT calculation.
-
-### CG and Front-Rotor Position MAT Files
-
-Files:
+`Chord.txt` has two numeric columns:
 
 ```text
-x_cg.mat
-z_cg.mat
-first_rotor_x.mat
-first_rotor_z.mat
+r_over_R  chord_m
 ```
 
-Each file must contain a callable variable with the same name as the file:
+`Pretwist.txt` has two numeric columns:
 
-```matlab
-x_cg_mm          = x_cg(tilt_angle_deg);
-z_cg_mm          = z_cg(tilt_angle_deg);
-front_rotor_x_mm = first_rotor_x(tilt_angle_deg);
-front_rotor_z_mm = first_rotor_z(tilt_angle_deg);
+```text
+r_over_R  twist_deg
 ```
 
-The returned values are in millimeters, matching the original `BEMTFLAP`
-geometry convention.
+`r_over_R = r/R`. Chord is stored directly in metres. If the source gives
+nondimensional `c/R`, multiply by rotor radius before writing `Chord.txt`.
+The BEMT calculation uses `chord_m * dr` directly.
 
-### Fuselage/Airframe Coefficient Tables
+## CG Position Table
+
+File:
+
+```text
+CG_positions.txt
+```
+
+Format:
+
+```text
+tilt_angle_deg  x_cg_mm  y_cg_mm  z_cg_mm
+```
+
+The values are absolute aircraft coordinates in millimetres and are
+interpolated by common airframe tilt angle.
+
+## Rotor Position Table
+
+File:
+
+```text
+Rotor_positions.txt
+```
+
+Format:
+
+```text
+rotor_id  tilt_angle_deg  x_mm  y_mm  z_mm
+```
+
+There must be one row for each rotor at each available tilt angle. The
+coordinates are absolute aircraft coordinates in millimetres. The code converts
+them to CG-relative body coordinates internally before calling the rotor BEMT
+routine.
+
+`cfg.rotor.tilt_angle_deg` may be scalar or a six-element vector. A scalar is
+applied to all rotors; a vector gives individual nacelle tilt angles.
+
+## Fuselage/Airframe Coefficient Tables
 
 Files:
 
@@ -252,30 +254,16 @@ Fuselage_cn.txt
 Fuselage_cll.txt
 ```
 
-Format: three columns per row.
+Format:
 
 ```text
-tilt_angle_deg   alpha_deg   coefficient
+tilt_angle_deg  alpha_deg  coefficient
 ```
 
-Example:
+The file name determines the coefficient. For example,
+`Fuselage_cd.txt` supplies CD and `Fuselage_cm.txt` supplies CM.
 
-```text
-0   -12   0.228091962
-0    -9   0.133751702
-0    -6   0.073399029
-```
-
-The lookup is built as:
-
-```matlab
-coefficient = table.CD(tilt_angle_deg, alpha_deg);
-```
-
-The file name determines which coefficient is being loaded: `Fuselage_cd.txt`
-for CD, `Fuselage_cl.txt` for CL, and so on.
-
-### Control Surface Increment Tables
+## Control Surface Increment Tables
 
 Files:
 
@@ -285,41 +273,27 @@ Fuselage_rudder.txt
 Fuselage_roll.txt
 ```
 
-Format: five columns per row.
+Format:
 
 ```text
-deflection_deg   alpha_deg   increment_1   increment_2   increment_3
+deflection_deg  alpha_deg  increment_1  increment_2  increment_3
 ```
 
-For `Fuselage_elevator.txt`, the three increments are:
+For `Fuselage_elevator.txt`, the increments are:
 
 ```text
-dCD   dCL   dCM
+dCD  dCL  dCM
 ```
 
-For `Fuselage_rudder.txt` and `Fuselage_roll.txt`, the three increments are
-used by the original code as:
+For `Fuselage_rudder.txt` and `Fuselage_roll.txt`, the increments are:
 
 ```text
-dCC   dCN   dCLL
+dCC  dCN  dCLL
 ```
 
-Example:
+The lookup call returns the three increments in the order above.
 
-```text
--20   -12   -0.034025137   0.051321743   -0.171615501
--20    -9   -0.013105979   0.142805449   -0.327482425
-```
-
-The lookup call returns a row vector:
-
-```matlab
-vals = table.eval(deflection_deg, alpha_deg);
-```
-
-with the increment order shown above.
-
-## Layout
+## Repository Layout
 
 ```text
 .
@@ -329,6 +303,9 @@ with the increment order shown above.
 `-- src/
     |-- BEMTFLAP_SWITCHED.m
     |-- CS1_cd_lookup.m
+    |-- build_1d_lookup_from_txt.m
+    |-- build_cg_lookup_from_txt.m
+    |-- build_rotor_position_lookup_from_txt.m
     |-- build_C_lookup_from_txt.m
     `-- build_fuselage_elevator_lookup.m
 ```
