@@ -6,12 +6,12 @@ and control-derivative calculation.
 这是一个用于 VTOL/eVTOL 飞行动力学计算的 MATLAB 程序，包括配平、旋翼
 BEMT、挥舞、稳定性导数和操纵导数计算。
 
-The public code can run without private lookup data. Set the switches in
+Set the switches in
 `RUN_ME.m` to `"default"` for built-in default models, or to `"lookup"` to read
-local text lookup tables from `data/`.
+local text (developed by users, the format will be introduced later) lookup tables from `data/`.
 
-公开版本不包含私有查表数据。`RUN_ME.m` 里的 switch 可以选择 `"default"`，
-使用程序内置缺省模型；也可以选择 `"lookup"`，从本地 `data/` 文件夹读取
+`RUN_ME.m` 里的 switch 可以选择 `"default"`，
+使用程序内置缺省模型；也可以选择 `"lookup"`，从床且 `data/` 文件夹读取 (由用户创捷，格式说明见后文)
 txt 查表数据。
 
 ## Run / 运行
