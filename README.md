@@ -81,7 +81,7 @@ Common trim and rotor settings:
 
 ```matlab
 cfg.trim.tilt_angle_deg = 90;       % common airframe/CG/fuselage lookup angle
-cfg.rotor.tilt_angle_deg = 90;      % scalar common nacelle tilt
+cfg.rotor.tilt_angle_deg = cfg.trim.tilt_angle_deg;      % scalar common nacelle tilt
 % cfg.rotor.tilt_angle_deg = [90 90 90 90 85 85]; % per-rotor nacelle tilts
 cfg.trim.speed_mps = [0 10 20];
 cfg.trim.use_previous_solution = true;
