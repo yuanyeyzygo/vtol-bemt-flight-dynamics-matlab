@@ -42,11 +42,11 @@ cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7]; % [Ixx Iyy Izz]
 
 % Rotor settings
-cfg.rotor.radius_m = 1.5;
+cfg.rotor.radius_m = 1.6;
 cfg.rotor.blade_count = 5;
-cfg.rotor.omega_rad_s = 83.775804;
-cfg.rotor.flap_inertia_kg_m2 = 2.25;
-cfg.rotor.flap_spring_nm_rad = 16000;
+cfg.rotor.omega_rad_s = 90;
+cfg.rotor.flap_inertia_kg_m2 = 2;
+cfg.rotor.flap_spring_nm_rad = 10000;
 cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
 
 % Trim case
@@ -76,11 +76,11 @@ cfg.trim.initial.pitch_rad = -0.01;
 cfg.trim.initial.roll_rad = 0;
 
 % Default data used when a switch is "default"
-cfg.defaults.geometry.x_cg_mm = 3037.64;
+cfg.defaults.geometry.x_cg_mm = 3000;
 cfg.defaults.geometry.y_cg_mm = 0;
-cfg.defaults.geometry.z_cg_mm = -960.52;
-cfg.defaults.geometry.first_rotor_x_mm = 453.28;
-cfg.defaults.geometry.first_rotor_z_mm = -1835.73;
+cfg.defaults.geometry.z_cg_mm = -900;
+cfg.defaults.geometry.first_rotor_x_mm = 450;
+cfg.defaults.geometry.first_rotor_z_mm = -1700;
 
 cfg.defaults.chord_m = 0.18;
 cfg.defaults.pretwist_root_deg = 0;
