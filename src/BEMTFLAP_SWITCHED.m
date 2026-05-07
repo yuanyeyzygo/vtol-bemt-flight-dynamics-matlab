@@ -249,7 +249,7 @@ fixed=zeros(3,6);
         
         step=newton_step_schur(Jac_big,orignal_diff);
         %step=solve_bordered_jacobian(Jac_big,orignal_diff);
-        if tt<2
+        if k<4
             mm33=0.5;
         else 
             mm33=0.99;
