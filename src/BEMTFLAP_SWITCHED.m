@@ -22,6 +22,15 @@ end
 
 addpath(fullfile(root, 'src'));
 
+trim_tol = 1e-8;
+if isfield(cfg, 'trim') && isfield(cfg.trim, 'tol')
+    trim_tol = cfg.trim.tol;
+end
+stability_tol = 1e-12;
+if isfield(cfg, 'stability') && isfield(cfg.stability, 'tol')
+    stability_tol = cfg.stability.tol;
+end
+
 %% Basic settings
 R = cfg.rotor.radius_m;
 rho = cfg.environment.rho_kg_m3;
@@ -265,7 +274,7 @@ end
             disp(velo1(1));
             disp(Final);
         end
-        if Final<1e-08
+        if Final < trim_tol
             break;
         end
         
@@ -303,6 +312,7 @@ end
     orignal_diff(r5) = errors5(:);
     orignal_diff(r6) = errors6(:);
     orignal_diff(control_idx) = body_error(:);
+    trim_residual_norm_current = sum(orignal_diff(:).^2);
 
     if diagnostic_trim_only(cfg)
         Mtt(1,tt) = velo1(1);
@@ -320,7 +330,9 @@ end
         trim_results.rotor_forces = [forces1, forces2, forces3, forces4, forces5, forces6];
         trim_results.fuselage_forces = fuse_forces(:);
         trim_results.trim_residual = orignal_diff;
-        trim_results.trim_residual_norm = sum(orignal_diff(:).^2);
+        trim_results.trim_residual_norm = trim_residual_norm_current;
+        trim_results.trim_converged = trim_residual_norm_current < trim_tol;
+        trim_results.status = "trim_only";
         trim_results.tilt_angle_deg = tilt_angle;
         trim_results.rotor_tilt_angle_deg = rotor_tilt_angles(:);
         trim_results.speed_mps = cfg.trim.speed_mps(:);
@@ -333,6 +345,42 @@ end
             X5_LOC(:).';
             X6_LOC(:).'];
         trim_results.has_nan = any(~isfinite(Trim_var(:))) || any(~isfinite(forcesall(:))) || any(~isfinite(orignal_diff(:)));
+        assignin('base', 'trim_results', trim_results);
+        return;
+    end
+
+    if ~(isfinite(trim_residual_norm_current) && trim_residual_norm_current < trim_tol)
+        Mtt(1,tt) = velo1(1);
+        Mtt(2,tt) = Veh_con(1);
+        Mtt(3:6,tt) = Trim_var(control_idx(1:4),1);
+        Mtt(7:8,tt) = Trim_var(control_idx(5:6),1);
+        Mtt(9,tt) = power1 + power2 + power3 + power4 + power5 + power6;
+        Mttt = Mtt(:,1:tt)';
+
+        trim_results = struct();
+        trim_results.cfg = cfg;
+        trim_results.trim_table = Mttt;
+        trim_results.final_trim_var = Trim_var;
+        trim_results.forcesall = forcesall;
+        trim_results.rotor_forces = [forces1, forces2, forces3, forces4, forces5, forces6];
+        trim_results.fuselage_forces = fuse_forces(:);
+        trim_results.trim_residual = orignal_diff;
+        trim_results.trim_residual_norm = trim_residual_norm_current;
+        trim_results.trim_converged = false;
+        trim_results.stability_converged = false;
+        trim_results.status = "trim_failed";
+        trim_results.failure_stage = "trim";
+        trim_results.tilt_angle_deg = tilt_angle;
+        trim_results.rotor_tilt_angle_deg = rotor_tilt_angles(:);
+        trim_results.speed_mps = cfg.trim.speed_mps(:);
+        trim_results.n_speed_points = numel(cfg.trim.speed_mps);
+        trim_results.rotor_locations_m = [
+            X1_LOC(:).';
+            X2_LOC(:).';
+            X3_LOC(:).';
+            X4_LOC(:).';
+            X5_LOC(:).';
+            X6_LOC(:).'];
         assignin('base', 'trim_results', trim_results);
         return;
     end
@@ -360,6 +408,10 @@ end
     angular_velocity_solution = angular_velocity;
     velo_solution = velo2;
     Veh_con_solution = Veh_con1;
+    stability_converged = true;
+    stability_failed_index = NaN;
+    stability_residual_norms = NaN(1, 13);
+    stability_iterations = NaN(1, 13);
     for N = get_stability_derivative_indices(cfg)
 
     % outer perturbation step
@@ -403,7 +455,7 @@ end
             disp(N);
         end
 
-        if resnorm < 1e-12
+        if resnorm < stability_tol
             break;
         end
 
@@ -440,6 +492,63 @@ end
         Trim_var(1:rotor_state_end,1) = Trim_var(1:rotor_state_end,1) - 0.99 * delta_trim;
     end
 
+    [theta0_1, theta0_2, theta0_3, theta0_4, theta0_5, theta0_6] = control_allocation(Trim_var);
+    [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, first_rotor_x, first_rotor_z, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
+    [errors12, forces21, beta_vals1, dbeta_vals1, power7,  ATT11] = bemt_flapp(Trim_var(r1,1),   R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_1, tilt_angle_1, angular_velocity, rotational_direction_1, acceleration, angular_acc, rotor_bemt_options, X1_LOC);
+    [errors22, forces22, beta_vals2, dbeta_vals2, power8,  ATT21] = bemt_flapp(Trim_var(r2,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_2, tilt_angle_2, angular_velocity, rotational_direction_2, acceleration, angular_acc, rotor_bemt_options, X2_LOC);
+    [errors32, forces23, beta_vals3, dbeta_vals3, power9,  ATT31] = bemt_flapp(Trim_var(r3,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_3, tilt_angle_3, angular_velocity, rotational_direction_3, acceleration, angular_acc, rotor_bemt_options, X3_LOC);
+    [errors42, forces24, beta_vals4, dbeta_vals4, power10, ATT41] = bemt_flapp(Trim_var(r4,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_4, tilt_angle_4, angular_velocity, rotational_direction_4, acceleration, angular_acc, rotor_bemt_options, X4_LOC);
+    [errors52, forces25, beta_vals5, dbeta_vals5, power11, ATT51] = bemt_flapp(Trim_var(r5,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_5, tilt_angle_5, angular_velocity, rotational_direction_5, acceleration, angular_acc, rotor_bemt_options, X5_LOC);
+    [errors62, forces26, beta_vals6, dbeta_vals6, power12, ATT61] = bemt_flapp(Trim_var(r6,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_6, tilt_angle_6, angular_velocity, rotational_direction_6, acceleration, angular_acc, rotor_bemt_options, X6_LOC);
+    fuse_forces1 = fuselage_aerodynamics(X_CCG, Veh_con, rho, velo, angular_velocity,tilt_angle, cd,cl, cm,cc,cn,cll,elev,rudd, airp,fuselage_geometry);
+    forcesall11 = forces21 + forces22 + forces23 + forces24 + forces25 + forces26+fuse_forces1';
+    residual0 = [errors12(:);
+                 errors22(:);
+                 errors32(:);
+                 errors42(:);
+                 errors52(:);
+                 errors62(:)];
+    resnorm = sum(residual0.^2);
+    stability_residual_norms(N) = resnorm;
+    stability_iterations(N) = kk;
+    if ~(isfinite(resnorm) && resnorm < stability_tol)
+        stability_converged = false;
+        stability_failed_index = N;
+        Mtt(1,tt) = velo1(1);
+        Mtt(2,tt) = Veh_con_solution(1);
+        Mtt(3:6,tt) = trim_solution_var(control_idx(1:4),1);
+        Mtt(7:8,tt) = trim_solution_var(control_idx(5:6),1);
+        Mtt(9,tt) = power1 + power2 + power3 + power4 + power5 + power6;
+        Mttt = Mtt(:,1:tt)';
+
+        trim_results = struct();
+        trim_results.cfg = cfg;
+        trim_results.trim_table = Mttt;
+        trim_results.final_trim_var = trim_solution_var;
+        trim_results.trim_residual = orignal_diff;
+        trim_results.trim_residual_norm = trim_residual_norm_current;
+        trim_results.trim_converged = true;
+        trim_results.stability_converged = false;
+        trim_results.status = "stability_failed";
+        trim_results.failure_stage = "stability";
+        trim_results.failure_derivative_index = N;
+        trim_results.failure_stability_residual_norm = resnorm;
+        trim_results.stability_residual_norms = stability_residual_norms;
+        trim_results.stability_iterations = stability_iterations;
+        trim_results.tilt_angle_deg = tilt_angle;
+        trim_results.rotor_tilt_angle_deg = rotor_tilt_angles(:);
+        trim_results.speed_mps = cfg.trim.speed_mps(:);
+        trim_results.n_speed_points = numel(cfg.trim.speed_mps);
+        trim_results.rotor_locations_m = [
+            X1_LOC(:).';
+            X2_LOC(:).';
+            X3_LOC(:).';
+            X4_LOC(:).';
+            X5_LOC(:).';
+            X6_LOC(:).'];
+        assignin('base', 'trim_results', trim_results);
+        return;
+    end
 
 
 
@@ -612,6 +721,13 @@ trim_results.control_B = MMB;
 trim_results.final_trim_var = trim_solution_var;
 trim_results.post_stability_trim_var = Trim_var;
 trim_results.last_eigenvalues = eig_A;
+trim_results.trim_residual_norm = trim_residual_norm_current;
+trim_results.trim_converged = true;
+trim_results.stability_converged = stability_converged;
+trim_results.status = "ok";
+trim_results.failure_derivative_index = stability_failed_index;
+trim_results.stability_residual_norms = stability_residual_norms;
+trim_results.stability_iterations = stability_iterations;
 trim_results.stability_derivatives_total = derivatives;
 trim_results.stability_derivatives_by_rotor = {derivatives1, derivatives2, derivatives3, derivatives4, derivatives5, derivatives6};
 trim_results.stability_derivatives_fuselage = derivatives - derivatives1 - derivatives2 - derivatives3 - derivatives4 - derivatives5 - derivatives6;
@@ -679,7 +795,9 @@ cfg.initial.fixed_wing_control = [0 0 0];
 cfg.trim.tilt_angle_deg = 60;
 cfg.trim.speed_mps = 40;
 cfg.trim.max_iterations = 10000;
+cfg.trim.tol = 1e-8;
 cfg.stability.max_iterations = 10000;
+cfg.stability.tol = 1e-12;
 cfg.output.verbose = false;
 cfg.trim.initial.rotor_state = [zeros(2*cfg.rotor.blade_count,1); 1];
 cfg.trim.initial.collective_deg = 18;
@@ -1358,16 +1476,17 @@ for k=1:Nb
             T_be=-(dL_new * cos(phi_new) + dD_new * sin(phi_new));
             D_be=-rotational_direction*dD_new * cos(phi_new) + rotational_direction*dL_new * sin(phi_new);
             M_torque=M_torque+D_be*r;
-            blade_force=[0; D_be; T_be];
-            blade_force=blade_m*blade_force;
+            blade_force_b = [0; D_be; T_be];
+            M_hinge_b = cross([r;0;0], blade_force_b);
+            M_A = M_A + M_hinge_b(2);
+
+            blade_force=blade_m*blade_force_b;
             blade_force=azimuth_new2*blade_force;
 
 
             Tb_new = Tb_new + blade_force(3);
             Hb_new = Hb_new + blade_force(1);
             Sb_new = Sb_new + blade_force(2);
-            
-            M_A= blade_force(3)*r+M_A;
         end
         Tb_average=Tb_average+Tb_new/Steps;
         Hb_average=Hb_average+Hb_new/Steps;
@@ -1378,8 +1497,12 @@ for k=1:Nb
         M_cor=-2*I_beta*(ppp*omega*cos(Az)-qqq*omega*sin(Az));
         M_ba=I_beta*(aap*sin(Az)+aaq*cos(Az));
         M_bl=1.5*(aaw-uuu*qqq+ppp*vvv);
-        M_average=M_average+M_R*cos(Az)/Steps;
-        L_average=L_average+M_R*sin(Az)/Steps;
+
+        M_R_blade = [0; -k_beta*beta_vals(Az1,k); 0];
+        M_hub_blade = -M_R_blade;
+        M_hub_disc = azimuth_new2 * blade_m * M_hub_blade;
+        L_average = L_average + M_hub_disc(1)/Steps;
+        M_average = M_average + M_hub_disc(2)/Steps;
 
         beta_2dot=(M_A+M_CF+M_R+M_cor+M_ba+M_bl)/I_beta;
         beta_dot = beta_dot + beta_2dot * dt;
@@ -1423,11 +1546,11 @@ velocity=sqrt(U(1)^2+U(2)^2+U(3)^2);
 
 alpha1=atan2(U(3),U(1));
 
-beta1=atan2(U(2),U(1));
-
 alpha=rad2deg(atan2(U(3),U(1)));
 
-beta=rad2deg(atan2(U(2),U(1)));
+beta1=atan2(U(2),U(1));
+
+beta=rad2deg(beta1);
 
 
 
@@ -1494,7 +1617,7 @@ n=0.5*roe*velocity^2*S*b*(cn_cof/5.0*beta+dcn_ru+dcn_ap);
 
 ll=0.5*roe*velocity^2*S*b*(cll_cof/5.0*beta+dcll_ru+dcll_ap);
 
-Fx_wind=[-d;-c;-l];
+Fx_wind=[-d;c;-l];
 
 wind2body=[cos(alpha1)*cos(beta1) -cos(alpha1)*sin(beta1) -sin(alpha1); sin(beta1) cos(beta1) 0; sin(alpha1)*cos(beta1) -sin(alpha1)*sin(beta1) cos(alpha1)];
 
