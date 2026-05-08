@@ -30,10 +30,10 @@ cfg.data.geometry.cg_file = 'CG_positions.txt';
 cfg.data.geometry.rotor_positions_file = 'Rotor_positions.txt';
 cfg.data.fuselage.reference_point_mm = [3600 0 0];  % V11 aero moment reference point, mm
 cfg.data.chord.txt_file = 'Chord.txt';              % r/R, chord_m
-cfg.data.chord.mat_file = 'chord_interp.mat';       % legacy c/R fallback
+%cfg.data.chord.mat_file = 'chord_interp.mat';       % legacy c/R fallback
 cfg.data.chord.mat_var = 'F';
 cfg.data.pretwist.txt_file = 'Pretwist.txt';        % r/R, twist_deg
-cfg.data.pretwist.mat_file = 'pretwist_interp.mat';
+%cfg.data.pretwist.mat_file = 'pretwist_interp.mat';
 cfg.data.pretwist.mat_var = 'pre_twist';
 
 % Environment and vehicle
@@ -43,20 +43,20 @@ cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7]; % [Ixx Iyy Izz]
 
 % Rotor settings
-cfg.rotor.radius_m = 1.5;
+cfg.rotor.radius_m = 1.3;
 cfg.rotor.blade_count = 5;
-cfg.rotor.omega_rad_s = 83.775804;
+cfg.rotor.omega_rad_s = 90;
 cfg.rotor.flap_inertia_kg_m2 = 2.25;
-cfg.rotor.flap_spring_nm_rad = 16000;
+cfg.rotor.flap_spring_nm_rad = 1000;
 cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
 cfg.rotor.rotational_direction = [1 -1 1 -1 1 -1]; % +1 or -1 for rotors 1..6
 cfg.rotor.blade_element_count = 10;
 cfg.rotor.azimuth_steps = 72;
 
 % Fuselage/aero database reference geometry
-cfg.fuselage.reference_area_m2 = 12.95;
-cfg.fuselage.mean_aero_chord_m = 1.09;
-cfg.fuselage.span_m = 12;
+cfg.fuselage.reference_area_m2 = 12;
+cfg.fuselage.mean_aero_chord_m = 1;
+cfg.fuselage.span_m = 10;
 
 % Trim case
 cfg.trim.tilt_angle_deg = 90;       % scalar airframe/CG/fuselage lookup tilt
@@ -85,22 +85,22 @@ cfg.trim.initial.pitch_rad = -0.01;
 cfg.trim.initial.roll_rad = 0;
 
 % Default data used when a switch is "default"
-cfg.defaults.geometry.x_cg_mm = 3037.64;
+cfg.defaults.geometry.x_cg_mm = 3000;
 cfg.defaults.geometry.y_cg_mm = 0;
-cfg.defaults.geometry.z_cg_mm = -960.52;
-cfg.defaults.geometry.first_rotor_x_mm = 453.28;
-cfg.defaults.geometry.first_rotor_z_mm = -1835.73;
+cfg.defaults.geometry.z_cg_mm = -950;
+cfg.defaults.geometry.first_rotor_x_mm = 430
+cfg.defaults.geometry.first_rotor_z_mm = -1900;
 % Default rotor-position formula coefficients, one row per rotor:
 % [x0 x_cos x_sin y z0 z_cos z_sin], mm, where
 % x = x0 + x_cos*cos(tilt) + x_sin*sin(tilt)
 % z = z0 + z_cos*cos(tilt) + z_sin*sin(tilt)
 cfg.defaults.geometry.rotor_position_coeffs_mm = [
-    3600 -750    0  6000 -1290    0 -750
-    1490 -450 -140  2500 -1490  140 -450
-    1490 -450 -140 -2500 -1490  140 -450
-    3600 -750    0 -6000 -1290    0 -750
-    5710  450  140  2500 -1210 -140  450
-    5710  450  140 -2500 -1210 -140  450];
+    3600 -700    0  6000 -1290    0 -750
+    1490 -400 -140  2500 -1490  140 -450
+    1490 -400 -140 -2500 -1490  140 -450
+    3600 -700    0 -6000 -1290    0 -750
+    5710 -400  140  2500 -1210 -140 -400
+    5710 -400  140 -2500 -1210 -140 -400];
 
 cfg.defaults.chord_m = 0.18;
 cfg.defaults.pretwist_root_deg = 0;
