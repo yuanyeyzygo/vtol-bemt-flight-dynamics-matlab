@@ -65,6 +65,8 @@ Loc_fuselage = XCG;
 [cd, cl, cm, cc, cn, cll, elev, rudd, airp] = setup_fuselage_model(cfg, data_dir);
 [F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6] = setup_rotor_model(cfg, data_dir);
 airfoil_section_edges = validate_airfoil_section_edges(cfg.rotor.airfoil_section_edges);
+rotor_profile = setup_rotor_profile(R, rotor_bemt_options, F, pre_twist, airfoil_section_edges, ...
+    {cl1, cl2, cl3, cl4, cl5, cl6}, {cd1, cd2, cd3, cd4, cd5, cd6});
 
 %beta0 = 0.15;
 %beta0_dot = 0.08;
@@ -190,12 +192,12 @@ end
         velo=earth2body(velo1,Trim_var,Trim_var(pitch_idx));
         velo2=velo;
         [theta0_1,theta0_2,theta0_3,theta0_4,theta0_5,theta0_6]=control_allocation(Trim_var);
-        [errors1,forces1, beta_vals1,dbeta_vals1, power1,ATT1]=bemt_flapp(Trim_var(r1,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_1,tilt_angle_1,angular_velocity,rotational_direction_1,acceleration,angular_acc,rotor_bemt_options,X1_LOC);
-        [errors2,forces2, beta_vals2,dbeta_vals2, power2,ATT2]=bemt_flapp(Trim_var(r2,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_2,tilt_angle_2,angular_velocity,rotational_direction_2,acceleration,angular_acc,rotor_bemt_options,X2_LOC);
-        [errors3,forces3, beta_vals3,dbeta_vals3, power3,ATT3]=bemt_flapp(Trim_var(r3,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_3,tilt_angle_3,angular_velocity,rotational_direction_3,acceleration,angular_acc,rotor_bemt_options,X3_LOC);
-        [errors4,forces4, beta_vals4,dbeta_vals4, power4,ATT4]=bemt_flapp(Trim_var(r4,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_4,tilt_angle_4,angular_velocity,rotational_direction_4,acceleration,angular_acc,rotor_bemt_options,X4_LOC);
-        [errors5,forces5, beta_vals5,dbeta_vals5, power5,ATT5]=bemt_flapp(Trim_var(r5,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_5,tilt_angle_5,angular_velocity,rotational_direction_5,acceleration,angular_acc,rotor_bemt_options,X5_LOC);
-        [errors6,forces6, beta_vals6,dbeta_vals6, power6,ATT6]=bemt_flapp(Trim_var(r6,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_6,tilt_angle_6,angular_velocity,rotational_direction_6,acceleration,angular_acc,rotor_bemt_options,X6_LOC);    
+        [errors1,forces1, beta_vals1,dbeta_vals1, power1,ATT1]=bemt_flapp(Trim_var(r1,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_1,tilt_angle_1,angular_velocity,rotational_direction_1,acceleration,angular_acc,rotor_bemt_options,X1_LOC);
+        [errors2,forces2, beta_vals2,dbeta_vals2, power2,ATT2]=bemt_flapp(Trim_var(r2,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_2,tilt_angle_2,angular_velocity,rotational_direction_2,acceleration,angular_acc,rotor_bemt_options,X2_LOC);
+        [errors3,forces3, beta_vals3,dbeta_vals3, power3,ATT3]=bemt_flapp(Trim_var(r3,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_3,tilt_angle_3,angular_velocity,rotational_direction_3,acceleration,angular_acc,rotor_bemt_options,X3_LOC);
+        [errors4,forces4, beta_vals4,dbeta_vals4, power4,ATT4]=bemt_flapp(Trim_var(r4,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_4,tilt_angle_4,angular_velocity,rotational_direction_4,acceleration,angular_acc,rotor_bemt_options,X4_LOC);
+        [errors5,forces5, beta_vals5,dbeta_vals5, power5,ATT5]=bemt_flapp(Trim_var(r5,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_5,tilt_angle_5,angular_velocity,rotational_direction_5,acceleration,angular_acc,rotor_bemt_options,X5_LOC);
+        [errors6,forces6, beta_vals6,dbeta_vals6, power6,ATT6]=bemt_flapp(Trim_var(r6,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_6,tilt_angle_6,angular_velocity,rotational_direction_6,acceleration,angular_acc,rotor_bemt_options,X6_LOC);    
         fuse_forces=fuselage_aerodynamics(X_CCG,Veh_con,rho,velo,angular_velocity,tilt_angle, cd,cl, cm,cc,cn,cll,elev,rudd, airp,fuselage_geometry);
         forcesall=forces1+forces2+forces3+forces4+forces5+forces6+fuse_forces';
         force333=forces1+forces2+forces3+forces4+forces5+forces6;
@@ -221,12 +223,12 @@ end
             [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, first_rotor_x, first_rotor_z, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
             velo=earth2body(velo1,Trim_var,Trim_var(pitch_idx));
             [theta0_1,theta0_2,theta0_3,theta0_4,theta0_5,theta0_6]=control_allocation(Trim_var);
-            [errors11,forces11, ~,dbeta_vals1, power7,ATT11]=bemt_flapp(Trim_var(r1,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_1,tilt_angle_1,angular_velocity,rotational_direction_1,acceleration,angular_acc,rotor_bemt_options,X1_LOC);
-            [errors21,forces12, ~,dbeta_vals2, power8,ATT21]=bemt_flapp(Trim_var(r2,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_2,tilt_angle_2,angular_velocity,rotational_direction_2,acceleration,angular_acc,rotor_bemt_options,X2_LOC);
-            [errors31,forces13, ~,dbeta_vals3, power9,ATT31]=bemt_flapp(Trim_var(r3,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_3,tilt_angle_3,angular_velocity,rotational_direction_3,acceleration,angular_acc,rotor_bemt_options,X3_LOC);
-            [errors41,forces14, ~,dbeta_vals4, power10,ATT41]=bemt_flapp(Trim_var(r4,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_4,tilt_angle_4,angular_velocity,rotational_direction_4,acceleration,angular_acc,rotor_bemt_options,X4_LOC);
-            [errors51,forces15, ~,dbeta_vals5, power11,ATT51]=bemt_flapp(Trim_var(r5,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_5,tilt_angle_5,angular_velocity,rotational_direction_5,acceleration,angular_acc,rotor_bemt_options,X5_LOC);
-            [errors61,forces16, ~,dbeta_vals6, power12,ATT61]=bemt_flapp(Trim_var(r6,1), R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta0_6,tilt_angle_6,angular_velocity,rotational_direction_6,acceleration,angular_acc,rotor_bemt_options,X6_LOC);    
+            [errors11,forces11, ~,dbeta_vals1, power7,ATT11]=bemt_flapp(Trim_var(r1,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_1,tilt_angle_1,angular_velocity,rotational_direction_1,acceleration,angular_acc,rotor_bemt_options,X1_LOC);
+            [errors21,forces12, ~,dbeta_vals2, power8,ATT21]=bemt_flapp(Trim_var(r2,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_2,tilt_angle_2,angular_velocity,rotational_direction_2,acceleration,angular_acc,rotor_bemt_options,X2_LOC);
+            [errors31,forces13, ~,dbeta_vals3, power9,ATT31]=bemt_flapp(Trim_var(r3,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_3,tilt_angle_3,angular_velocity,rotational_direction_3,acceleration,angular_acc,rotor_bemt_options,X3_LOC);
+            [errors41,forces14, ~,dbeta_vals4, power10,ATT41]=bemt_flapp(Trim_var(r4,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_4,tilt_angle_4,angular_velocity,rotational_direction_4,acceleration,angular_acc,rotor_bemt_options,X4_LOC);
+            [errors51,forces15, ~,dbeta_vals5, power11,ATT51]=bemt_flapp(Trim_var(r5,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_5,tilt_angle_5,angular_velocity,rotational_direction_5,acceleration,angular_acc,rotor_bemt_options,X5_LOC);
+            [errors61,forces16, ~,dbeta_vals6, power12,ATT61]=bemt_flapp(Trim_var(r6,1), R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta0_6,tilt_angle_6,angular_velocity,rotational_direction_6,acceleration,angular_acc,rotor_bemt_options,X6_LOC);    
             fuse_forces1=fuselage_aerodynamics(X_CCG,Veh_con,rho,velo,angular_velocity, tilt_angle, cd,cl, cm,cc,cn,cll,elev,rudd, airp,fuselage_geometry);
             forcesall1=forces11+forces12+forces13+forces14+forces15+forces16+fuse_forces1';
             body_error1(1)=(forcesall1(1)-gross_weight*g*sin(Trim_var(pitch_idx)))/gross_weight/g;
@@ -278,12 +280,12 @@ end
     velo = earth2body(velo1, Trim_var, Trim_var(pitch_idx));
     velo2 = velo;
     [theta0_1, theta0_2, theta0_3, theta0_4, theta0_5, theta0_6] = control_allocation(Trim_var);
-    [errors1, forces1, beta_vals1, dbeta_vals1, power1, ATT1] = bemt_flapp(Trim_var(r1,1), R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_1, tilt_angle_1, angular_velocity, rotational_direction_1, acceleration, angular_acc, rotor_bemt_options, X1_LOC);
-    [errors2, forces2, beta_vals2, dbeta_vals2, power2, ATT2] = bemt_flapp(Trim_var(r2,1), R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_2, tilt_angle_2, angular_velocity, rotational_direction_2, acceleration, angular_acc, rotor_bemt_options, X2_LOC);
-    [errors3, forces3, beta_vals3, dbeta_vals3, power3, ATT3] = bemt_flapp(Trim_var(r3,1), R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_3, tilt_angle_3, angular_velocity, rotational_direction_3, acceleration, angular_acc, rotor_bemt_options, X3_LOC);
-    [errors4, forces4, beta_vals4, dbeta_vals4, power4, ATT4] = bemt_flapp(Trim_var(r4,1), R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_4, tilt_angle_4, angular_velocity, rotational_direction_4, acceleration, angular_acc, rotor_bemt_options, X4_LOC);
-    [errors5, forces5, beta_vals5, dbeta_vals5, power5, ATT5] = bemt_flapp(Trim_var(r5,1), R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_5, tilt_angle_5, angular_velocity, rotational_direction_5, acceleration, angular_acc, rotor_bemt_options, X5_LOC);
-    [errors6, forces6, beta_vals6, dbeta_vals6, power6, ATT6] = bemt_flapp(Trim_var(r6,1), R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_6, tilt_angle_6, angular_velocity, rotational_direction_6, acceleration, angular_acc, rotor_bemt_options, X6_LOC);
+    [errors1, forces1, beta_vals1, dbeta_vals1, power1, ATT1] = bemt_flapp(Trim_var(r1,1), R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_1, tilt_angle_1, angular_velocity, rotational_direction_1, acceleration, angular_acc, rotor_bemt_options, X1_LOC);
+    [errors2, forces2, beta_vals2, dbeta_vals2, power2, ATT2] = bemt_flapp(Trim_var(r2,1), R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_2, tilt_angle_2, angular_velocity, rotational_direction_2, acceleration, angular_acc, rotor_bemt_options, X2_LOC);
+    [errors3, forces3, beta_vals3, dbeta_vals3, power3, ATT3] = bemt_flapp(Trim_var(r3,1), R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_3, tilt_angle_3, angular_velocity, rotational_direction_3, acceleration, angular_acc, rotor_bemt_options, X3_LOC);
+    [errors4, forces4, beta_vals4, dbeta_vals4, power4, ATT4] = bemt_flapp(Trim_var(r4,1), R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_4, tilt_angle_4, angular_velocity, rotational_direction_4, acceleration, angular_acc, rotor_bemt_options, X4_LOC);
+    [errors5, forces5, beta_vals5, dbeta_vals5, power5, ATT5] = bemt_flapp(Trim_var(r5,1), R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_5, tilt_angle_5, angular_velocity, rotational_direction_5, acceleration, angular_acc, rotor_bemt_options, X5_LOC);
+    [errors6, forces6, beta_vals6, dbeta_vals6, power6, ATT6] = bemt_flapp(Trim_var(r6,1), R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_6, tilt_angle_6, angular_velocity, rotational_direction_6, acceleration, angular_acc, rotor_bemt_options, X6_LOC);
     fuse_forces = fuselage_aerodynamics(X_CCG, Veh_con, rho, velo, angular_velocity, tilt_angle, cd, cl, cm, cc, cn, cll, elev, rudd, airp, fuselage_geometry);
     forcesall = forces1 + forces2 + forces3 + forces4 + forces5 + forces6 + fuse_forces';
     force333 = forces1 + forces2 + forces3 + forces4 + forces5 + forces6;
@@ -377,12 +379,12 @@ end
         [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, first_rotor_x, first_rotor_z, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
 
         % baseline residuals and forces
-        [errors12, forces21, beta_vals1, dbeta_vals1, power7,  ATT11] = bemt_flapp(Trim_var(r1,1),   R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_1, tilt_angle_1, angular_velocity, rotational_direction_1, acceleration, angular_acc, rotor_bemt_options, X1_LOC);
-        [errors22, forces22, beta_vals2, dbeta_vals2, power8,  ATT21] = bemt_flapp(Trim_var(r2,1),  R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_2, tilt_angle_2, angular_velocity, rotational_direction_2, acceleration, angular_acc, rotor_bemt_options, X2_LOC);
-        [errors32, forces23, beta_vals3, dbeta_vals3, power9,  ATT31] = bemt_flapp(Trim_var(r3,1),  R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_3, tilt_angle_3, angular_velocity, rotational_direction_3, acceleration, angular_acc, rotor_bemt_options, X3_LOC);
-        [errors42, forces24, beta_vals4, dbeta_vals4, power10, ATT41] = bemt_flapp(Trim_var(r4,1),  R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_4, tilt_angle_4, angular_velocity, rotational_direction_4, acceleration, angular_acc, rotor_bemt_options, X4_LOC);
-        [errors52, forces25, beta_vals5, dbeta_vals5, power11, ATT51] = bemt_flapp(Trim_var(r5,1),  R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_5, tilt_angle_5, angular_velocity, rotational_direction_5, acceleration, angular_acc, rotor_bemt_options, X5_LOC);
-        [errors62, forces26, beta_vals6, dbeta_vals6, power12, ATT61] = bemt_flapp(Trim_var(r6,1),  R, Nb, omega, I_beta, velo, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_6, tilt_angle_6, angular_velocity, rotational_direction_6, acceleration, angular_acc, rotor_bemt_options, X6_LOC);
+        [errors12, forces21, beta_vals1, dbeta_vals1, power7,  ATT11] = bemt_flapp(Trim_var(r1,1),   R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_1, tilt_angle_1, angular_velocity, rotational_direction_1, acceleration, angular_acc, rotor_bemt_options, X1_LOC);
+        [errors22, forces22, beta_vals2, dbeta_vals2, power8,  ATT21] = bemt_flapp(Trim_var(r2,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_2, tilt_angle_2, angular_velocity, rotational_direction_2, acceleration, angular_acc, rotor_bemt_options, X2_LOC);
+        [errors32, forces23, beta_vals3, dbeta_vals3, power9,  ATT31] = bemt_flapp(Trim_var(r3,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_3, tilt_angle_3, angular_velocity, rotational_direction_3, acceleration, angular_acc, rotor_bemt_options, X3_LOC);
+        [errors42, forces24, beta_vals4, dbeta_vals4, power10, ATT41] = bemt_flapp(Trim_var(r4,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_4, tilt_angle_4, angular_velocity, rotational_direction_4, acceleration, angular_acc, rotor_bemt_options, X4_LOC);
+        [errors52, forces25, beta_vals5, dbeta_vals5, power11, ATT51] = bemt_flapp(Trim_var(r5,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_5, tilt_angle_5, angular_velocity, rotational_direction_5, acceleration, angular_acc, rotor_bemt_options, X5_LOC);
+        [errors62, forces26, beta_vals6, dbeta_vals6, power12, ATT61] = bemt_flapp(Trim_var(r6,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_6, tilt_angle_6, angular_velocity, rotational_direction_6, acceleration, angular_acc, rotor_bemt_options, X6_LOC);
 
         fuse_forces1 = fuselage_aerodynamics(X_CCG, Veh_con, rho, velo, angular_velocity,tilt_angle, cd,cl, cm,cc,cn,cll,elev,rudd, airp,fuselage_geometry);
         forcesall11 = forces21 + forces22 + forces23 + forces24 + forces25 + forces26+fuse_forces1';
@@ -419,7 +421,7 @@ end
                 [theta0_1p, theta0_2p, theta0_3p, theta0_4p, theta0_5p, theta0_6p] = control_allocation(Trim_var);
                 theta0_p = [theta0_1p, theta0_2p, theta0_3p, theta0_4p, theta0_5p, theta0_6p];
 
-                [errors_p, ~, ~, ~, ~, ~] = bemt_flapp(Trim_var(idx,1), R, Nb, omega, I_beta, velo_p, k_beta, F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6, airfoil_section_edges, theta0_p(rotor_number), rotor_tilt_angles(rotor_number), angular_velocity, rot_dirs(rotor_number), acceleration, angular_acc, rotor_bemt_options, hub_locs{rotor_number});
+                [errors_p, ~, ~, ~, ~, ~] = bemt_flapp(Trim_var(idx,1), R, Nb, omega, I_beta, velo_p, k_beta, rotor_profile, theta0_p(rotor_number), rotor_tilt_angles(rotor_number), angular_velocity, rot_dirs(rotor_number), acceleration, angular_acc, rotor_bemt_options, hub_locs{rotor_number});
 
                 Jac_big2(idx,i) = (errors_p(:) - errors_base{rotor_number}(:)) / delta;
                 Trim_var(i) = Trim_var(i) - delta;
@@ -1075,6 +1077,44 @@ if any(~isfinite(edges)) || any(edges <= 0) || any(edges >= 1) || any(diff(edges
 end
 end
 
+function profile = setup_rotor_profile(R, rotor_bemt_options, chord_fun, pretwist_fun, airfoil_section_edges, cl_lookup, cd_lookup)
+N_BE = rotor_bemt_options.blade_element_count;
+root_cutout = 0.15;
+x_nodes = root_cutout + ((1:N_BE) - 0.5) * ((1 - root_cutout) / N_BE);
+
+chord_m = zeros(1, N_BE);
+pretwist_rad = zeros(1, N_BE);
+airfoil_id = zeros(1, N_BE);
+for ii = 1:N_BE
+    x = x_nodes(ii);
+    chord_m(ii) = chord_fun(x);
+    pretwist_rad(ii) = deg2rad(pretwist_fun(x));
+    section = find(x < airfoil_section_edges, 1, 'first');
+    if isempty(section)
+        section = numel(airfoil_section_edges) + 1;
+    end
+    airfoil_id(ii) = section;
+end
+
+if any(~isfinite(chord_m)) || any(chord_m <= 0)
+    error('BEMTFLAP:BadChord', 'Rotor chord values must be positive finite numbers.');
+end
+if any(~isfinite(pretwist_rad))
+    error('BEMTFLAP:BadPretwist', 'Rotor pretwist values must be finite numbers.');
+end
+
+profile = struct();
+profile.n_be = N_BE;
+profile.x_nodes = x_nodes;
+profile.r_nodes = x_nodes * R;
+profile.dr = (R - root_cutout * R) / N_BE;
+profile.chord_m = chord_m;
+profile.pretwist_rad = pretwist_rad;
+profile.airfoil_id = airfoil_id;
+profile.cl_lookup = cl_lookup;
+profile.cd_lookup = cd_lookup;
+end
+
 function cl = default_rotor_cl(alpha_deg, mach, airfoil)
 cl = airfoil.cl_alpha_per_rad.*deg2rad(alpha_deg);
 cl = max(min(cl, airfoil.cl_max), -airfoil.cl_max);
@@ -1160,11 +1200,11 @@ if isfield(init, 'roll_rad'), Trim_var(control_idx(6)) = init.roll_rad; end
 end
 
 
-function [errors,forces, beta_vals,dbeta_vals,power,ATT]=bemt_flapp(Trim_var, R,Nb, omega,I_beta, velo, k_beta,F,pre_twist,cd1,cd2,cd3,cd4,cd5,cd6,cl1,cl2,cl3,cl4,cl5,cl6,airfoil_section_edges,theta00,tilt_angle,angular_speed,rotational_direction,acceleration,angular_acc,rotor_bemt_options,Hub_loc)
+function [errors,forces, beta_vals,dbeta_vals,power,ATT]=bemt_flapp(Trim_var, R,Nb, omega,I_beta, velo, k_beta,rotor_profile,theta00,tilt_angle,angular_speed,rotational_direction,acceleration,angular_acc,rotor_bemt_options,Hub_loc)
 % Parameters
 
 rho = rotor_bemt_options.rho_kg_m3;
-N_BE = rotor_bemt_options.blade_element_count;
+N_BE = rotor_profile.n_be;
 Steps = rotor_bemt_options.azimuth_steps;
 ATT=zeros(Steps,N_BE);
 %velo(2)=velo(2)*rotational_direction;
@@ -1177,7 +1217,7 @@ veloo=velo+cross(angular_speed,Hub_loc');
 %     veloo
 % end
 tilt_conversion=[sin(deg2rad(tilt_angle)) 0 cos(deg2rad(tilt_angle));0 1 0;-cos(deg2rad(tilt_angle)) 0 sin(deg2rad(tilt_angle))];
-inv_tiltconversion=inv(tilt_conversion);
+inv_tiltconversion=tilt_conversion';
 v12=tilt_conversion*veloo;
 w_disc=tilt_conversion*angular_speed;
 a_disc=tilt_conversion*acceleration;
@@ -1203,8 +1243,14 @@ aaq=ang_ace(2);
 aar=ang_ace(3);
 
 theta0=deg2rad(theta00);
-                                   
-dr = (R-0.15*R) / N_BE;                              
+x_nodes = rotor_profile.x_nodes;
+r_nodes = rotor_profile.r_nodes;
+dr = rotor_profile.dr;
+chord_m = rotor_profile.chord_m;
+pretwist_rad = rotor_profile.pretwist_rad;
+airfoil_id = rotor_profile.airfoil_id;
+cl_lookup = rotor_profile.cl_lookup;
+cd_lookup = rotor_profile.cd_lookup;
 vi=Trim_var(end);
 
 %k_beta = 0;  % Assuming zero stiffness
@@ -1249,22 +1295,22 @@ for k=1:Nb
 	    Az=rotational_direction*((Az1-1)*dpsi+(k-1)*2*pi/Nb);
         azimuth_new=[-cos(Az) -sin(Az) 0; sin(Az) -cos(Az) 0;0 0 1];
 
-        azimuth_new2=inv(azimuth_new);
+        azimuth_new2=azimuth_new';
         blade_m2=[cos(beta_vals(Az1,k)) 0 -sin(beta_vals(Az1,k)); 0 1 0;sin(beta_vals(Az1,k)) 0 cos(beta_vals(Az1,k))];%%%???
         %blade_m2=[1 0 0; 0 cos(beta_vals(Az1,k)) -sin(beta_vals(Az1,k)); 0 sin(beta_vals(Az1,k)) cos(beta_vals(Az1,k))];
         %blade_m2=[1 0 0 ; 0 1 0; 0 0 1];
-        blade_m=inv(blade_m2);
+        blade_m=blade_m2';
         velocity2=azimuth_new*velocity1;
         %w_shaft=azimuth_new*w_disc+1*[0;0;omega];
         w_shaft=azimuth_new*w_disc+1*[0;0;omega];
         w_blade=blade_m2*w_shaft+[0;dbeta_vals(Az1,k);0];
         velocity=blade_m2*velocity2;
         for z = 1:N_BE
-            x = 0.15+ (0.85 / N_BE /2) + (z - 1) * (0.85 / N_BE); 
-            r = x * R;
+            x = x_nodes(z);
+            r = r_nodes(z);
             v_blade_elem=velocity+cross(w_blade,[r;0;0]);
 
-            theta = theta0+deg2rad(pre_twist(x));
+            theta = theta0 + pretwist_rad(z);
             V_n=v_blade_elem(3)-vi*cos(beta_vals(Az1,k));   
             vt=rotational_direction*v_blade_elem(2);
             phi_new = atan2(V_n , vt);
@@ -1274,30 +1320,15 @@ for k=1:Nb
             end
 
             Mach=sqrt(V_n^2+vt^2)/340;
-            if (x<airfoil_section_edges(1))
-                C_Lnew = cl1(rad2deg(alpha_new),Mach);
-                C_Dnew = cd1(rad2deg(alpha_new),Mach);
-            elseif (x<airfoil_section_edges(2))
-                C_Lnew = cl2(rad2deg(alpha_new),Mach);
-                C_Dnew = cd2(rad2deg(alpha_new),Mach); 
-            elseif (x<airfoil_section_edges(3))
-                C_Lnew = cl3(rad2deg(alpha_new),Mach);
-                C_Dnew = cd3(rad2deg(alpha_new),Mach);
-            elseif (x<airfoil_section_edges(4))
-                C_Lnew = cl4(rad2deg(alpha_new),Mach);
-                C_Dnew = cd4(rad2deg(alpha_new),Mach);   
-            elseif (x<airfoil_section_edges(5))
-                C_Lnew = cl5(rad2deg(alpha_new),Mach);
-                C_Dnew = cd5(rad2deg(alpha_new),Mach);  
-            else
-                C_Lnew = cl6(rad2deg(alpha_new),Mach);
-                C_Dnew = cd6(rad2deg(alpha_new),Mach);
-            end 
+            section_id = airfoil_id(z);
+            C_Lnew = cl_lookup{section_id}(rad2deg(alpha_new), Mach);
+            C_Dnew = cd_lookup{section_id}(rad2deg(alpha_new), Mach);
             %C_Lnew=6.0*alpha_new;
             %C_Dnew=0.002+rad2deg(alpha_new)^2*0.00004;
                
-            dL_new = 0.5 * rho * (vt^2+(vi-V_n)^2) * F(x) * dr * C_Lnew;
-            dD_new = 0.5 * rho * (vt^2+(vi-V_n)^2) * F(x) * dr * C_Dnew;
+            q_chord_dr = 0.5 * rho * (vt^2+(vi-V_n)^2) * chord_m(z) * dr;
+            dL_new = q_chord_dr * C_Lnew;
+            dD_new = q_chord_dr * C_Dnew;
             if k==1
                 MMde(Az1,z)=dD_new;
                 MMli(Az1,z)=dL_new;
