@@ -1423,11 +1423,11 @@ velocity=sqrt(U(1)^2+U(2)^2+U(3)^2);
 
 alpha1=atan2(U(3),U(1));
 
-beta1=atan2(-U(2),U(1));
+beta1=atan2(U(2),U(1));
 
 alpha=rad2deg(atan2(U(3),U(1)));
 
-beta=rad2deg(atan2(-U(2),U(1)));
+beta=rad2deg(atan2(U(2),U(1)));
 
 
 
