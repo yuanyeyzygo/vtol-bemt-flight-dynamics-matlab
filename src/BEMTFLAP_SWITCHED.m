@@ -651,11 +651,11 @@ cfg.environment.gravity_m_s2 = 9.81;
 cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7];
 
-cfg.rotor.radius_m = 1.5;
+cfg.rotor.radius_m = 1.3;
 cfg.rotor.blade_count = 5;
-cfg.rotor.omega_rad_s = 83.775804;
+cfg.rotor.omega_rad_s = 90;
 cfg.rotor.flap_inertia_kg_m2 = 2.25;
-cfg.rotor.flap_spring_nm_rad = 16000;
+cfg.rotor.flap_spring_nm_rad = 1000;
 cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
 cfg.rotor.tilt_angle_deg = [];
 cfg.rotor.rotational_direction = [1 -1 1 -1 1 -1];
@@ -687,18 +687,18 @@ cfg.trim.initial.yaw_deg = 0;
 cfg.trim.initial.pitch_rad = -0.01;
 cfg.trim.initial.roll_rad = 0;
 
-cfg.defaults.geometry.x_cg_mm = 3037.64;
+cfg.defaults.geometry.x_cg_mm = 3000;
 cfg.defaults.geometry.y_cg_mm = 0;
-cfg.defaults.geometry.z_cg_mm = -960.52;
-cfg.defaults.geometry.first_rotor_x_mm = 453.28;
-cfg.defaults.geometry.first_rotor_z_mm = -1835.73;
+cfg.defaults.geometry.z_cg_mm = -950;
+cfg.defaults.geometry.first_rotor_x_mm = 430;
+cfg.defaults.geometry.first_rotor_z_mm = -1900;
 cfg.defaults.geometry.rotor_position_coeffs_mm = [
-    3600 -750    0  6000 -1290    0 -750
-    1490 -450 -140  2500 -1490  140 -450
-    1490 -450 -140 -2500 -1490  140 -450
-    3600 -750    0 -6000 -1290    0 -750
-    5710  450  140  2500 -1210 -140  450
-    5710  450  140 -2500 -1210 -140  450];
+    3600 -700    0  6000 -1290    0 -750
+    1490 -400 -140  2500 -1490  140 -450
+    1490 -400 -140 -2500 -1490  140 -450
+    3600 -700    0 -6000 -1290    0 -750
+    5710 -400  140  2500 -1210 -140 -400
+    5710 -400  140 -2500 -1210 -140 -400];
 cfg.data.geometry.cg_file = 'CG_positions.txt';
 cfg.data.geometry.rotor_positions_file = 'Rotor_positions.txt';
 
@@ -722,9 +722,9 @@ cfg.defaults.fuselage.cm_alpha_per_rad = -0.15;
 cfg.defaults.fuselage.cc_beta = -0.7;
 cfg.defaults.fuselage.cn_beta = 0.08;
 cfg.defaults.fuselage.cll_beta = -0.08;
-cfg.fuselage.reference_area_m2 = 12.95;
-cfg.fuselage.mean_aero_chord_m = 1.09;
-cfg.fuselage.span_m = 12;
+cfg.fuselage.reference_area_m2 = 12;
+cfg.fuselage.mean_aero_chord_m = 1;
+cfg.fuselage.span_m = 10;
 
 cfg.defaults.controls.elevator = [0, 0.40, -0.70];
 cfg.defaults.controls.rudder = [0.25, -0.08, 0];
@@ -779,7 +779,7 @@ end
 end
 
 function ref_m = setup_fuselage_reference(cfg)
-ref_mm = [2986.94, 0, -787.15];
+ref_mm = [3600, 0, 0];
 if isfield(cfg, 'data') && isfield(cfg.data, 'fuselage') && ...
         isfield(cfg.data.fuselage, 'reference_point_mm')
     ref_mm = cfg.data.fuselage.reference_point_mm;

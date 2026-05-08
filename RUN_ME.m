@@ -88,7 +88,7 @@ cfg.trim.initial.roll_rad = 0;
 cfg.defaults.geometry.x_cg_mm = 3000;
 cfg.defaults.geometry.y_cg_mm = 0;
 cfg.defaults.geometry.z_cg_mm = -950;
-cfg.defaults.geometry.first_rotor_x_mm = 430
+cfg.defaults.geometry.first_rotor_x_mm = 430;
 cfg.defaults.geometry.first_rotor_z_mm = -1900;
 % Default rotor-position formula coefficients, one row per rotor:
 % [x0 x_cos x_sin y z0 z_cos z_sin], mm, where
