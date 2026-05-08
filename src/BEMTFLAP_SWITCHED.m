@@ -65,7 +65,7 @@ Loc_fuselage = XCG;
 [cd, cl, cm, cc, cn, cll, elev, rudd, airp] = setup_fuselage_model(cfg, data_dir);
 [F, pre_twist, cd1, cd2, cd3, cd4, cd5, cd6, cl1, cl2, cl3, cl4, cl5, cl6] = setup_rotor_model(cfg, data_dir);
 airfoil_section_edges = validate_airfoil_section_edges(cfg.rotor.airfoil_section_edges);
-rotor_profile = setup_rotor_profile(R, rotor_bemt_options, F, pre_twist, airfoil_section_edges, ...
+rotor_profile = setup_rotor_profile(cfg, R, rotor_bemt_options, F, pre_twist, airfoil_section_edges, ...
     {cl1, cl2, cl3, cl4, cl5, cl6}, {cd1, cd2, cd3, cd4, cd5, cd6});
 
 %beta0 = 0.15;
@@ -1077,7 +1077,7 @@ if any(~isfinite(edges)) || any(edges <= 0) || any(edges >= 1) || any(diff(edges
 end
 end
 
-function profile = setup_rotor_profile(R, rotor_bemt_options, chord_fun, pretwist_fun, airfoil_section_edges, cl_lookup, cd_lookup)
+function profile = setup_rotor_profile(cfg, R, rotor_bemt_options, chord_fun, pretwist_fun, airfoil_section_edges, cl_lookup, cd_lookup)
 N_BE = rotor_bemt_options.blade_element_count;
 root_cutout = 0.15;
 x_nodes = root_cutout + ((1:N_BE) - 0.5) * ((1 - root_cutout) / N_BE);
@@ -1113,6 +1113,10 @@ profile.pretwist_rad = pretwist_rad;
 profile.airfoil_id = airfoil_id;
 profile.cl_lookup = cl_lookup;
 profile.cd_lookup = cd_lookup;
+profile.airfoil_is_default = is_default_mode(cfg.switch.airfoil);
+if profile.airfoil_is_default
+    profile.default_airfoil = cfg.defaults.airfoil;
+end
 end
 
 function cl = default_rotor_cl(alpha_deg, mach, airfoil)
@@ -1251,6 +1255,16 @@ pretwist_rad = rotor_profile.pretwist_rad;
 airfoil_id = rotor_profile.airfoil_id;
 cl_lookup = rotor_profile.cl_lookup;
 cd_lookup = rotor_profile.cd_lookup;
+use_default_airfoil = rotor_profile.airfoil_is_default;
+if use_default_airfoil
+    default_airfoil = rotor_profile.default_airfoil;
+    cl_alpha_per_rad = default_airfoil.cl_alpha_per_rad;
+    cl_max = default_airfoil.cl_max;
+    cd0 = default_airfoil.cd0;
+    cd_alpha2 = default_airfoil.cd_alpha2;
+else
+    rad_to_deg = 180 / pi;
+end
 vi=Trim_var(end);
 
 %k_beta = 0;  % Assuming zero stiffness
@@ -1319,10 +1333,17 @@ for k=1:Nb
                 ATT(Az1,z)=alpha_new;
             end
 
-            Mach=sqrt(V_n^2+vt^2)/340;
-            section_id = airfoil_id(z);
-            C_Lnew = cl_lookup{section_id}(rad2deg(alpha_new), Mach);
-            C_Dnew = cd_lookup{section_id}(rad2deg(alpha_new), Mach);
+            if use_default_airfoil
+                C_Lnew = cl_alpha_per_rad * alpha_new;
+                C_Lnew = max(min(C_Lnew, cl_max), -cl_max);
+                C_Dnew = cd0 + cd_alpha2 * alpha_new^2;
+            else
+                Mach=sqrt(V_n^2+vt^2)/340;
+                section_id = airfoil_id(z);
+                alpha_deg = alpha_new * rad_to_deg;
+                C_Lnew = cl_lookup{section_id}(alpha_deg, Mach);
+                C_Dnew = cd_lookup{section_id}(alpha_deg, Mach);
+            end
             %C_Lnew=6.0*alpha_new;
             %C_Dnew=0.002+rad2deg(alpha_new)^2*0.00004;
                
