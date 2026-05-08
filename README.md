@@ -1,9 +1,9 @@
 # VTOL BEMT Flight-Dynamics MATLAB
 
-MATLAB implementation of a VTOL/eVTOL trim, rotor BEMT, flapping, stability,
+MATLAB implementation of a hexacopter VTOL/eVTOL trim, rotor BEMT, flapping, stability,
 and control-derivative calculation.
 
-这是一个用于 VTOL/eVTOL 飞行动力学计算的 MATLAB 程序，包括配平、旋翼
+这是一个用于六旋翼 VTOL/eVTOL 飞行动力学计算的 MATLAB 程序，包括配平、旋翼
 BEMT、挥舞、稳定性导数和操纵导数计算。
 
 Set the switches in
