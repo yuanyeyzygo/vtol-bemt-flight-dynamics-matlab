@@ -3,11 +3,12 @@ if exist('flap_model_override', 'var')
 else
     requested_flap_model = "disk";
 end
-if exist('response_dt_s_override', 'var')
-    requested_response_dt_s = response_dt_s_override;
-else
-    requested_response_dt_s = response_default_dt_s();
-end
+%if exist('response_dt_s_override', 'var')
+%    requested_response_dt_s = response_dt_s_override;
+%else
+%    requested_response_dt_s = response_default_dt_s();
+%end
+requested_response_dt_s=0.02；
 clearvars -except requested_flap_model requested_response_dt_s;
 clc;
 
