@@ -8,7 +8,7 @@ end
 %else
 %    requested_response_dt_s = response_default_dt_s();
 %end
-requested_response_dt_s=0.02；
+requested_response_dt_s=0.02； %%% time step for the simulink simulation
 clearvars -except requested_flap_model requested_response_dt_s;
 clc;
 
@@ -50,9 +50,9 @@ cfg.environment.gravity_m_s2 = 9.81;
 cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7];
 
-cfg.rotor.radius_m = 1.5;
+cfg.rotor.radius_m = 1.3;     %%%Rotor radius
 cfg.rotor.blade_count = 5;
-cfg.rotor.omega_rad_s = 90;
+cfg.rotor.omega_rad_s = 90;    %%% Rotor radius
 cfg.rotor.flap_inertia_kg_m2 = 2.25;
 cfg.rotor.flap_spring_nm_rad = 16000;
 cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
@@ -75,22 +75,22 @@ cfg.controls.physical_surface_names = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1'
 cfg.controls.surface_mixing_matrix = [];
 cfg.controls.surface_bias_deg = [];
 
-cfg.aero.dynamic_derivatives.enabled = true;
-cfg.aero.dynamic_derivatives.CLq = 7.3939521;
-cfg.aero.dynamic_derivatives.Cmq = -16.8207899;
-cfg.aero.dynamic_derivatives.Clp = -0.6099156;
-cfg.aero.dynamic_derivatives.Cnp = 0.0251017;
-cfg.aero.dynamic_derivatives.Cyp = -0.1026634;
-cfg.aero.dynamic_derivatives.Cnr = -0.1027184;
-cfg.aero.dynamic_derivatives.Clr = 0.0608574;
-cfg.aero.dynamic_derivatives.Cyr = 0.3244426;
-cfg.aero.dynamic_derivatives.Cma_dot = -8.41039495;
-cfg.aero.dynamic_derivatives.Cn_beta_dot = -0.0513592;
+cfg.aero.dynamic_derivatives.enabled = true; %%%fuselage dynamic derivative Can be set as zero if information is not available
+cfg.aero.dynamic_derivatives.CLq = 7.39;
+cfg.aero.dynamic_derivatives.Cmq = -16.82;
+cfg.aero.dynamic_derivatives.Clp = -0.60;
+cfg.aero.dynamic_derivatives.Cnp = 0.025;
+cfg.aero.dynamic_derivatives.Cyp = -0.10;
+cfg.aero.dynamic_derivatives.Cnr = -0.10;
+cfg.aero.dynamic_derivatives.Clr = 0.06;
+cfg.aero.dynamic_derivatives.Cyr = 0.32;
+cfg.aero.dynamic_derivatives.Cma_dot = -8.41;
+cfg.aero.dynamic_derivatives.Cn_beta_dot = -0.0;
 cfg.aero.dynamic_derivatives.alpha_beta_dot_mode = "kinematic";
 cfg.aero.dynamic_derivatives.alpha_beta_dot_mode_id = 1;
 cfg.aero.dynamic_derivatives.min_velocity_mps = 1e-6;
 
-cfg.trim.tilt_angle_deg = 90;
+cfg.trim.tilt_angle_deg = 90;  %%%Tilt rotor angle
 cfg.rotor.tilt_angle_deg = cfg.trim.tilt_angle_deg;
 cfg.trim.speed_mps = 0;
 cfg.trim.use_previous_solution = true;
@@ -100,11 +100,12 @@ cfg.stability.max_iterations = 1;
 cfg.stability.tol = 1e-7;
 cfg.output.verbose = false;
 
-cfg.initial.uvw_earth_mps = [cfg.trim.speed_mps(1) 0 0];
+cfg.initial.uvw_earth_mps = [cfg.trim.speed_mps(1) 0 0]; %%% Starting point speed, earth coordinate
 cfg.initial.pqr_rad_s = [0 0 0];
 cfg.initial.fixed_wing_control = [0 0 0];
 
-cfg.trim.initial.rotor_state = [zeros(2*cfg.rotor.blade_count, 1); 5];
+cfg.trim.initial.rotor_state = [zeros(2*cfg.rotor.blade_count, 1); 5]; % Initial trim value and Initial induced velocity 
+% If the trim cannot be achieved usually in the fixed wing mode and hover you can alter the 5 in the above vector to higher or lower
 cfg.trim.initial.collective_deg = 18;
 cfg.trim.initial.longitudinal_deg = -0.002;
 cfg.trim.initial.lateral_deg = 0;
