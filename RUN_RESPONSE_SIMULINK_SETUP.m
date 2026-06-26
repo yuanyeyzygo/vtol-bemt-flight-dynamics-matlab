@@ -52,7 +52,7 @@ cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7];
 
 cfg.rotor.radius_m = 1.3;     %%%Rotor radius
 cfg.rotor.blade_count = 5;
-cfg.rotor.omega_rad_s = 90;    %%% tilting angle
+cfg.rotor.omega_rad_s = 90;    %%% rotational speed
 cfg.rotor.flap_inertia_kg_m2 = 2.25;
 cfg.rotor.flap_spring_nm_rad = 16000;
 cfg.rotor.airfoil_section_edges = [0.25 0.40 0.50 0.80 0.92];
