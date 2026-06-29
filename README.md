@@ -12,9 +12,9 @@ The repository is organized around three workflows:
 2. **Simulink individual-blade workflow**: `RUN_RESPONSE_SIMULINK_SETUP.m` with `cfg.rotor.flap_model = "blade"`. This uses the same detailed individual-blade rotor model for nonlinear response in Simulink. It can also use `default`, `lookup`, or `excel` data, but it is computationally slow and is mainly for high-fidelity checks.
 3. **Fast Simulink disk-flap workflow**: `RUN_RESPONSE_SIMULINK_SETUP.m` with the default `cfg.rotor.flap_model = "disk"`, followed by `RUN_FAST_DISK_MEX_RESPONSE`. This uses a reduced whole-disk flapping model and MEX acceleration for real-time-style response simulation. This fast workflow is intended for the public `default` model and does not support the full lookup-table path.
 
-1. **MATLAB 单片桨叶工作流**：`RUN_ME.m` / `RUN_TRIM_AND_STABILITY.m`。这是细节版配平、稳定性导数和操纵导数计算流程，使用单片桨叶挥舞模型和 BEMT，可选择公开的 `default` 数据，也可使用用户自己的 `lookup` / `excel` 数据。
-2. **Simulink 单片桨叶工作流**：`RUN_RESPONSE_SIMULINK_SETUP.m`，并设置 `cfg.rotor.flap_model = "blade"`。这一路径在 Simulink 非线性响应中使用同样的细节版单片桨叶旋翼模型，也可使用 `default`、`lookup` 或 `excel` 数据，但计算较慢，主要用于高精度核对。
-3. **快速 Simulink 整体桨盘工作流**：默认 `cfg.rotor.flap_model = "disk"` 的 `RUN_RESPONSE_SIMULINK_SETUP.m`，然后运行 `RUN_FAST_DISK_MEX_RESPONSE`。这一路径使用降阶整体桨盘挥舞模型和 MEX 加速，面向实时/准实时响应仿真；快速模型用于公开 `default` 模型，不支持完整 lookup table 路径。
+1 **MATLAB 单片桨叶工作流**：`RUN_ME.m` / `RUN_TRIM_AND_STABILITY.m`。这是细节版配平、稳定性导数和操纵导数计算流程，使用单片桨叶挥舞模型和 BEMT，可选择公开的 `default` 数据，也可使用用户自己的 `lookup` / `excel` 数据。
+2 **Simulink 单片桨叶工作流**：`RUN_RESPONSE_SIMULINK_SETUP.m`，并设置 `cfg.rotor.flap_model = "blade"`。这一路径在 Simulink 非线性响应中使用同样的细节版单片桨叶旋翼模型，也可使用 `default`、`lookup` 或 `excel` 数据，但计算较慢，主要用于高精度核对。
+3 **快速 Simulink 整体桨盘工作流**：默认 `cfg.rotor.flap_model = "disk"` 的 `RUN_RESPONSE_SIMULINK_SETUP.m`，然后运行 `RUN_FAST_DISK_MEX_RESPONSE`。这一路径使用降阶整体桨盘挥舞模型和 MEX 加速，面向实时/准实时响应仿真；快速模型用于公开 `default` 模型，不支持完整 lookup table 路径。
 
 Useful references:
 
