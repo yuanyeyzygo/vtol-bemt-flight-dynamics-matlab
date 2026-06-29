@@ -3,13 +3,13 @@ function out = RUN_FAST_DISK_MEX_RESPONSE(stop_time_s)
 %
 % Usage:
 %   out = RUN_FAST_DISK_MEX_RESPONSE;
-%   out = RUN_FAST_DISK_MEX_RESPONSE(1.5);
+%   out = RUN_FAST_DISK_MEX_RESPONSE(2.0);
 %
 % Run RUN_RESPONSE_SIMULINK_SETUP before this function. This runner uses the
 % current base-workspace sim_init and does not load cached init MAT files.
 
 if nargin < 1 || isempty(stop_time_s)
-    stop_time_s = 1.5;
+    stop_time_s = 2.0;
 end
 
 root = fileparts(mfilename('fullpath'));

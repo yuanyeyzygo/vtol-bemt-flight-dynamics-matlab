@@ -8,7 +8,7 @@ end
 %else
 %    requested_response_dt_s = response_default_dt_s();
 %end
-requested_response_dt_s=0.02； %%% time step for the simulink simulation
+requested_response_dt_s=0.02; %%% time step for the simulink simulation
 clearvars -except requested_flap_model requested_response_dt_s;
 clc;
 
@@ -39,6 +39,8 @@ cfg.data.geometry.rotor_positions_file = 'Rotor_positions.txt';
 cfg.data.fuselage.reference_point_mm = [3600 0 0];
 cfg.data.aero.excel_file = 'V16_aero_database_clean.xlsx';
 cfg.data.aero.base_sheet = 'base_aero';
+cfg.data.aero.base_sheets = {};
+cfg.data.aero.base_sheet_tilt_angle_deg = [];
 cfg.data.aero.control_surface_sheets = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.data.chord.txt_file = 'Chord.txt';
 cfg.data.chord.mat_var = 'F';
@@ -74,6 +76,17 @@ cfg.controls.channel_names = {'pitch','yaw','roll'};
 cfg.controls.physical_surface_names = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.controls.surface_mixing_matrix = [];
 cfg.controls.surface_bias_deg = [];
+cfg.control_blend.enabled = true;
+cfg.control_blend.apply_to_trim = true;
+cfg.control_blend.independent_variable = "tilt_angle";
+cfg.control_blend.tilt_helicopter_deg = 90;
+cfg.control_blend.tilt_fixedwing_deg = 0;
+cfg.control_blend.speed_start_mps = 30;
+cfg.control_blend.speed_end_mps = 50;
+cfg.control_blend.schedule = "sincos";
+cfg.control_blend.rotor_gains = [1 1 1];
+cfg.control_blend.fixed_gains = [-1 1 1];
+cfg.control_blend.append_to_B = true;
 
 cfg.aero.dynamic_derivatives.enabled = true; %%%fuselage dynamic derivative Can be set as zero if information is not available
 cfg.aero.dynamic_derivatives.CLq = 7.39;
@@ -104,7 +117,7 @@ cfg.initial.uvw_earth_mps = [cfg.trim.speed_mps(1) 0 0]; %%% Starting point spee
 cfg.initial.pqr_rad_s = [0 0 0];
 cfg.initial.fixed_wing_control = [0 0 0];
 
-cfg.trim.initial.rotor_state = [zeros(2*cfg.rotor.blade_count, 1); 5]; % Initial trim value and Initial induced velocity 
+cfg.trim.initial.rotor_state = [zeros(2*cfg.rotor.blade_count, 1); 5]; % Initial trim value and Initial induced velocity
 % If the trim cannot be achieved usually in the fixed wing mode and hover you can alter the 5 in the above vector to higher or lower
 cfg.trim.initial.collective_deg = 18;
 cfg.trim.initial.longitudinal_deg = -0.002;
@@ -255,6 +268,7 @@ sim_model.rotor_bemt_options.inflow_model_id = response_inflow_model_id(sim_mode
 sim_model.rotor_bemt_options.inflow_tau_mode_id = response_inflow_tau_mode_id(sim_model.rotor_bemt_options.inflow_tau_mode);
 sim_model.default_fuselage = cfg.defaults.fuselage;
 sim_model.default_controls = cfg.defaults.controls;
+sim_model.control_blend = response_control_blend_model(cfg);
 
 sim_init = struct();
 sim_init.x0 = x0;
@@ -337,5 +351,63 @@ end
 if numel(rotor_tilt_angle_deg) ~= 6 || any(~isfinite(rotor_tilt_angle_deg))
     error('RUN_RESPONSE_SIMULINK_SETUP:BadRotorTiltAngle', ...
         'cfg.response.rotor_tilt_angle_deg must be empty or contain six finite values in degrees.');
+end
+end
+
+function blend = response_control_blend_model(cfg)
+raw = cfg.control_blend;
+blend.enabled = logical(raw.enabled);
+if isfield(raw, 'apply_to_response')
+    blend.apply_to_response = logical(raw.apply_to_response);
+else
+    blend.apply_to_response = logical(raw.apply_to_trim);
+end
+blend.speed_start_mps = raw.speed_start_mps;
+blend.speed_end_mps = raw.speed_end_mps;
+blend.tilt_helicopter_deg = raw.tilt_helicopter_deg;
+blend.tilt_fixedwing_deg = raw.tilt_fixedwing_deg;
+blend.independent_variable_id = response_control_blend_independent_variable_id(raw.independent_variable);
+blend.schedule_id = response_control_blend_schedule_id(raw.schedule);
+blend.rotor_gains = raw.rotor_gains(:);
+blend.fixed_gains = raw.fixed_gains(:);
+if numel(blend.rotor_gains) ~= 3 || numel(blend.fixed_gains) ~= 3
+    error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
+        'cfg.control_blend.rotor_gains and fixed_gains must each contain three values.');
+end
+if ~(isfinite(blend.speed_start_mps) && isfinite(blend.speed_end_mps)) || ...
+        blend.speed_end_mps <= blend.speed_start_mps
+    error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
+        'cfg.control_blend.speed_end_mps must be greater than speed_start_mps.');
+end
+if ~(isfinite(blend.tilt_helicopter_deg) && isfinite(blend.tilt_fixedwing_deg)) || ...
+        abs(blend.tilt_fixedwing_deg - blend.tilt_helicopter_deg) < eps
+    error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
+        'cfg.control_blend tilt endpoints must be finite and different.');
+end
+end
+
+function id = response_control_blend_independent_variable_id(name)
+switch lower(string(name))
+    case "speed"
+        id = 1;
+    case {"tilt", "tilt_angle", "nacelle_tilt"}
+        id = 2;
+    otherwise
+        error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
+            'cfg.control_blend.independent_variable must be "speed" or "tilt_angle".');
+end
+end
+
+function id = response_control_blend_schedule_id(schedule_name)
+switch lower(string(schedule_name))
+    case "sincos"
+        id = 3;
+    case "linear"
+        id = 1;
+    case "smoothstep"
+        id = 2;
+    otherwise
+        error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
+            'cfg.control_blend.schedule must be "sincos", "linear", or "smoothstep".');
 end
 end

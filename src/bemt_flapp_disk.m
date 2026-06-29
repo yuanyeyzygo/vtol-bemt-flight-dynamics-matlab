@@ -286,7 +286,7 @@ M_CF = -ctx.omega^2 * ctx.I_beta * beta_now;
 M_R = -ctx.k_beta * beta_now;
 M_cor = -2*ctx.I_beta*(ctx.ppp*ctx.omega*cos(Az) - ctx.qqq*ctx.omega*sin(Az));
 M_ba = ctx.I_beta*(ctx.aap*sin(Az) + ctx.aaq*cos(Az));
-M_bl = 1.5*(ctx.aaw - ctx.uuu*ctx.qqq + ctx.ppp*ctx.vvv);
+M_bl = (3/2)*(ctx.aaw - ctx.uuu*ctx.qqq + ctx.ppp*ctx.vvv);
 beta_2dot = (M_A + M_CF + M_R + M_cor + M_ba + M_bl) / ctx.I_beta;
 
 M_R_blade = [0; -ctx.k_beta*beta_now; 0];

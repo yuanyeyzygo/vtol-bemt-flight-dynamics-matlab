@@ -1,6 +1,16 @@
 clear;
 clc;
 
+% VTOL BEMT flight-dynamics entry point.
+%
+% RUN_ME uses the detailed individual-blade BEMT/flapping model for trim,
+% stability derivatives, and control derivatives. This is the higher-fidelity
+% MATLAB-only workflow.
+%
+% For nonlinear response and 50 Hz real-time-style Simulink/MEX simulation,
+% use RUN_RESPONSE_SIMULINK_SETUP, which uses the reduced whole-disk flapping
+% model.
+
 root = fileparts(mfilename('fullpath'));
 addpath(fullfile(root, 'src'));
 data_dir = fullfile(root, 'data');
@@ -31,7 +41,9 @@ cfg.data.geometry.cg_file = 'CG_positions.txt';
 cfg.data.geometry.rotor_positions_file = 'Rotor_positions.txt';
 cfg.data.fuselage.reference_point_mm = [3600 0 0];  % V11 aero moment reference point, mm
 cfg.data.aero.excel_file = 'V16_aero_database_clean.xlsx';
-cfg.data.aero.base_sheet = 'base_aero';
+cfg.data.aero.base_sheet = 'base_aero'; % single-sheet format: tilt beta alpha CD CL Cm CC Cn Cl
+cfg.data.aero.base_sheets = {}; % split-sheet format example: {'base_0','base_30','base_60','base_90'}
+cfg.data.aero.base_sheet_tilt_angle_deg = []; % example for split sheets: [0 30 60 90]
 cfg.data.aero.control_surface_sheets = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.data.chord.txt_file = 'Chord.txt';              % r/R, chord_m
 %cfg.data.chord.mat_file = 'chord_interp.mat';       % legacy c/R fallback
@@ -47,7 +59,7 @@ cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7]; % [Ixx Iyy Izz]
 
 % Rotor settings
-cfg.rotor.radius_m = 1.5;
+cfg.rotor.radius_m = 1.3;
 cfg.rotor.blade_count = 5;
 cfg.rotor.omega_rad_s = 90;
 cfg.rotor.flap_inertia_kg_m2 = 2.25;
@@ -75,6 +87,23 @@ cfg.controls.physical_surface_names = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1'
 %   VL = 0.5*(yaw - pitch), VR = 0.5*(yaw + pitch), WL/WR = roll.
 cfg.controls.surface_mixing_matrix = [];
 cfg.controls.surface_bias_deg = [];
+
+% Transition control blending. The blended pilot-equivalent channels after
+% collective are allocated by nacelle tilt angle:
+%   rotor_weight = sind(tilt_angle)
+%   fixed_weight = cosd(tilt_angle)
+% so 90 deg is pure rotor control and 0 deg is pure fixed-wing control.
+cfg.control_blend.enabled = true;
+cfg.control_blend.apply_to_trim = true;
+cfg.control_blend.independent_variable = "tilt_angle";
+cfg.control_blend.tilt_helicopter_deg = 90;
+cfg.control_blend.tilt_fixedwing_deg = 0;
+cfg.control_blend.speed_start_mps = 30;
+cfg.control_blend.speed_end_mps = 50;
+cfg.control_blend.schedule = "sincos"; % "sincos", "linear", or "smoothstep"
+cfg.control_blend.rotor_gains = [1 1 1]; % [pitch roll yaw] -> [longitudinal lateral yaw]
+cfg.control_blend.fixed_gains = [-1 1 1]; % [pitch roll yaw] sign/scale for fixed-wing channels
+cfg.control_blend.append_to_B = true;
 
 % Fuselage/wing dynamic aerodynamic derivatives. Rates use the standard
 % nondimensional forms p*b/(2V), q*c/(2V), r*b/(2V).
@@ -152,8 +181,8 @@ cfg.defaults.geometry.rotor_position_coeffs_mm = [
     5896.6   269.3     47.5  -2500  -1396.6    40.7   542.5];
 
 cfg.defaults.chord_m = 0.20264354;
-cfg.defaults.pretwist_root_deg = 17.45;
-cfg.defaults.pretwist_tip_deg = -4.13;
+cfg.defaults.pretwist_root_deg = 19.279996;
+cfg.defaults.pretwist_tip_deg = -6.276289;
 
 cfg.defaults.airfoil.cl_alpha_per_rad = 5.579842;
 cfg.defaults.airfoil.cl_max = 1.134702;

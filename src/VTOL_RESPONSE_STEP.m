@@ -41,6 +41,8 @@ if numel(rotor_tilt_angles) ~= numel(sim_model.rotor_tilt_angles)
     error('VTOL_RESPONSE_STEP:BadRotorTiltInput', ...
         'rotor_tilt_angle_deg must contain %d values.', numel(sim_model.rotor_tilt_angles));
 end
+[rotor_controls, fixed_controls] = response_effective_control_channels_step( ...
+    rotor_controls, fixed_controls, x, rotor_tilt_angles, sim_model);
 rotor_states = unstack_rotor_state(rotor_state, sim_model);
 
 [forces, rotor_states_next, inflow] = response_total_forces_step(x, rotor_states, rotor_controls, fixed_controls, rotor_tilt_angles, sim_model, dt);
@@ -434,6 +436,71 @@ switch tau_mode_id
         error('VTOL_RESPONSE_STEP:BadInflowTau', 'Unknown inflow_tau_mode_id.');
 end
 tau_s = max(tau_s, 1e-6);
+end
+
+function [rotor_controls, fixed_controls] = response_effective_control_channels_step(raw_controls, fixed_base, x, rotor_tilt_angles, sim_model)
+if ~isfield(sim_model, 'control_blend')
+    rotor_controls = raw_controls(:);
+    fixed_controls = fixed_base(:);
+    return;
+end
+
+blend = sim_model.control_blend;
+if ~blend.enabled || ~blend.apply_to_response
+    rotor_controls = raw_controls(:);
+    fixed_controls = fixed_base(:);
+    return;
+end
+
+tilt_angle_deg = mean(rotor_tilt_angles(:));
+speed_mps = sqrt(x(1)^2 + x(2)^2 + x(3)^2);
+[rotor_weight, fixed_weight] = response_control_blend_weights_step(speed_mps, tilt_angle_deg, blend);
+
+collective = raw_controls(1);
+pitch_cmd = raw_controls(2);
+roll_cmd = raw_controls(3);
+yaw_cmd = raw_controls(4);
+
+rotor_controls = zeros(4,1);
+rotor_controls(1) = collective;
+rotor_controls(2) = rotor_weight * blend.rotor_gains(1) * pitch_cmd;
+rotor_controls(3) = rotor_weight * blend.rotor_gains(2) * roll_cmd;
+rotor_controls(4) = rotor_weight * blend.rotor_gains(3) * yaw_cmd;
+
+fixed_controls = fixed_base(:);
+fixed_controls(1) = fixed_controls(1) + fixed_weight * blend.fixed_gains(1) * pitch_cmd;
+fixed_controls(3) = fixed_controls(3) + fixed_weight * blend.fixed_gains(2) * roll_cmd;
+fixed_controls(2) = fixed_controls(2) + fixed_weight * blend.fixed_gains(3) * yaw_cmd;
+end
+
+function [rotor_weight, fixed_weight] = response_control_blend_weights_step(speed_mps, tilt_angle_deg, blend)
+switch blend.schedule_id
+    case 3
+        tilt_min = min(blend.tilt_helicopter_deg, blend.tilt_fixedwing_deg);
+        tilt_max = max(blend.tilt_helicopter_deg, blend.tilt_fixedwing_deg);
+        tilt_limited = min(max(tilt_angle_deg, tilt_min), tilt_max);
+        rotor_weight = min(max(sind(tilt_limited), 0), 1);
+        fixed_weight = min(max(cosd(tilt_limited), 0), 1);
+        return;
+    otherwise
+        if blend.independent_variable_id == 2
+            s = (tilt_angle_deg - blend.tilt_helicopter_deg) / ...
+                (blend.tilt_fixedwing_deg - blend.tilt_helicopter_deg);
+        else
+            s = (speed_mps - blend.speed_start_mps) / ...
+                (blend.speed_end_mps - blend.speed_start_mps);
+        end
+end
+s = min(max(s, 0), 1);
+switch blend.schedule_id
+    case 1
+        fixed_weight = s;
+    case 2
+        fixed_weight = s*s*(3 - 2*s);
+    otherwise
+        error('VTOL_RESPONSE_STEP:BadControlBlend', 'Unknown control blend schedule id.');
+end
+rotor_weight = 1 - fixed_weight;
 end
 
 function theta_vec = response_control_allocation_step(rotor_controls)

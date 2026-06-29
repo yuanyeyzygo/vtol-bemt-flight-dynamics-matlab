@@ -6,7 +6,7 @@ Purpose
 This is the fast Simulink response version:
 - default/no-lookup data path
 - updated default geometry/aero parameters
-- rotor radius R = 1.5 m
+- rotor radius R = 1.3 m
 - flap stiffness k_beta = 16000 N*m/rad
 - disk flap model
 - RK4 aircraft update
@@ -20,7 +20,7 @@ How to run
 In MATLAB, open this folder and run:
 
     RUN_RESPONSE_SIMULINK_SETUP
-    out = RUN_FAST_DISK_MEX_RESPONSE(1.5);
+    out = RUN_FAST_DISK_MEX_RESPONSE(2.0);
 
 Main outputs are in the SimulationOutput object:
 - out.x_sim

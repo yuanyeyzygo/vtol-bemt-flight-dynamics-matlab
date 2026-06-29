@@ -14,3 +14,10 @@ tmp_*
 *_summary.txt
 *_results.txt
 response_zero_input_*.png
+results_lookup*/
+results_*/
+*_logs/
+vtol_bemt_*_with_data*/
+tp*/
+excel_vs_txt_*.txt
+full_lookup_*.csv

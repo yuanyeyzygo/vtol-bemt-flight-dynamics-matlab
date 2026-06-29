@@ -29,6 +29,8 @@ cfg.data.geometry.rotor_positions_file = 'Rotor_positions.txt';
 cfg.data.fuselage.reference_point_mm = [3600 0 0];
 cfg.data.aero.excel_file = 'V16_aero_database_clean.xlsx';
 cfg.data.aero.base_sheet = 'base_aero';
+cfg.data.aero.base_sheets = {};
+cfg.data.aero.base_sheet_tilt_angle_deg = [];
 cfg.data.aero.control_surface_sheets = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.data.chord.txt_file = 'Chord.txt';
 cfg.data.chord.mat_var = 'F';
@@ -40,7 +42,7 @@ cfg.environment.gravity_m_s2 = 9.81;
 cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7];
 
-cfg.rotor.radius_m = 1.5;
+cfg.rotor.radius_m = 1.3;
 cfg.rotor.blade_count = 5;
 cfg.rotor.omega_rad_s = 90;
 cfg.rotor.flap_inertia_kg_m2 = 2.25;
