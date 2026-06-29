@@ -1,6 +1,6 @@
 # VTOL BEMT 飞行动力学 MATLAB 程序
 
-[English README](README.md)
+语言： [English](README.md) | [中文](README.zh-CN.md) | [Français](README.fr.md) | [Italiano](README.it.md)
 
 本仓库提供 VTOL/eVTOL 飞行动力学计算工具，包括配平、旋翼 BEMT、挥舞动力学、稳定性/操纵导数，以及非线性响应仿真。
 
