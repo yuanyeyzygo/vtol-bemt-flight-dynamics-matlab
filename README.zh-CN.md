@@ -106,89 +106,29 @@ cfg.response.compile_mex = true;
 
 缺省模型是为了开源和快速测试设置的简化模型。主要参数都暴露在 `RUN_ME.m` 和 `RUN_RESPONSE_SIMULINK_SETUP.m` 中。
 
-常用整机和环境参数：
+下表中的数值是公开示例缺省值，用于测试、传播和代码核对，不代表任何私有构型数据。
 
-```matlab
-cfg.environment.rho_kg_m3
-cfg.environment.gravity_m_s2
-cfg.vehicle.mass_kg
-cfg.vehicle.inertia_kg_m2   % [Ixx Iyy Izz]
-```
-
-旋翼参数：
-
-```matlab
-cfg.rotor.radius_m
-cfg.rotor.blade_count
-cfg.rotor.omega_rad_s
-cfg.rotor.flap_inertia_kg_m2
-cfg.rotor.flap_spring_nm_rad
-cfg.rotor.rotational_direction
-cfg.rotor.blade_element_count
-cfg.rotor.azimuth_steps
-cfg.rotor.flap_model        % "blade" or "disk"
-cfg.rotor.flap_integrator
-cfg.rotor.inflow_model
-```
-
-缺省旋翼位置使用下面的解析形式：
-
-```matlab
-x = x0 + x_cos*cos(tilt) + x_sin*sin(tilt)
-y = y0
-z = z0 + z_cos*cos(tilt) + z_sin*sin(tilt)
-```
-
-系数存放在：
-
-```matlab
-cfg.defaults.geometry.rotor_position_coeffs_mm
-```
-
-缺省桨叶翼型和几何：
-
-```matlab
-cfg.defaults.chord_m
-cfg.defaults.pretwist_root_deg
-cfg.defaults.pretwist_tip_deg
-cfg.defaults.airfoil.cl_alpha_per_rad
-cfg.defaults.airfoil.cl_max
-cfg.defaults.airfoil.cd0
-cfg.defaults.airfoil.cd_alpha2
-```
-
-缺省机身和舵面参数：
-
-```matlab
-cfg.fuselage.reference_area_m2
-cfg.fuselage.mean_aero_chord_m
-cfg.fuselage.span_m
-cfg.defaults.fuselage.cd0
-cfg.defaults.fuselage.cl_alpha_per_rad
-cfg.defaults.fuselage.cm_alpha_per_rad
-cfg.defaults.fuselage.cc_beta
-cfg.defaults.fuselage.cn_beta
-cfg.defaults.fuselage.cll_beta
-cfg.defaults.controls.elevator
-cfg.defaults.controls.rudder
-cfg.defaults.controls.aileron
-```
-
-动导数为可选项，接口为：
-
-```matlab
-cfg.aero.dynamic_derivatives.enabled
-cfg.aero.dynamic_derivatives.CLq
-cfg.aero.dynamic_derivatives.Cmq
-cfg.aero.dynamic_derivatives.Clp
-cfg.aero.dynamic_derivatives.Cnp
-cfg.aero.dynamic_derivatives.Cyp
-cfg.aero.dynamic_derivatives.Cnr
-cfg.aero.dynamic_derivatives.Clr
-cfg.aero.dynamic_derivatives.Cyr
-cfg.aero.dynamic_derivatives.Cma_dot
-cfg.aero.dynamic_derivatives.Cn_beta_dot
-```
+| 类别 | 参数 | 公开缺省值 | 单位 | 缺省模式含义 | 修改位置 |
+|---|---|---:|---|---|---|
+| 环境 | `cfg.environment.rho_kg_m3`, `cfg.environment.gravity_m_s2` | `1.225`, `9.81` | kg/m^3, m/s^2 | 气动力计算使用的空气密度，以及配平/运动方程使用的重力加速度。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 整机 | `cfg.vehicle.mass_kg` | `1900` | kg | 配平力平衡和响应方程使用的整机质量。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 转动惯量 | `cfg.vehicle.inertia_kg_m2` | `[1966.5, 5245.3, 3282.7]` | kg m^2 | 体轴系惯量，顺序为 `[Ixx Iyy Izz]`。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 旋翼尺寸和转速 | `cfg.rotor.radius_m`, `blade_count`, `omega_rad_s` | `1.3`, `5`, `90` | m, -, rad/s | 公开缺省旋翼尺度、桨叶片数和名义角速度。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 旋翼挥舞 | `cfg.rotor.flap_inertia_kg_m2`, `flap_spring_nm_rad` | `2.25`, `16000` | kg m^2, N m/rad | 桨叶挥舞惯量和等效挥舞刚度。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 旋翼离散 | `cfg.rotor.blade_element_count`, `azimuth_steps` | `10`, `72` | -, - | 细节旋翼计算使用的展向叶素数和方位角离散数。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 翼型分段 | `cfg.rotor.airfoil_section_edges` | `[0.25, 0.40, 0.50, 0.80, 0.92]` | r/R | 六段旋翼翼型的径向截止位置。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 旋翼转向 | `cfg.rotor.rotational_direction` | `[1, -1, 1, -1, 1, -1]` | - | 1 到 6 号旋翼的旋转方向符号。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 旋翼模型选项 | `cfg.rotor.flap_model`, `flap_integrator`, `inflow_model` | 随工作流变化 | - | 选择单片桨叶或整体桨盘挥舞模型、挥舞状态积分器，以及固定或均匀诱导速度模型。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 缺省重心 | `cfg.defaults.geometry.x_cg_mm`, `y_cg_mm`, `z_cg_mm` | `3554.3`, `0`, `-588.7` | mm | 关闭几何查表时使用的公开缺省重心。 | `RUN_ME.m` |
+| 缺省旋翼位置 | `cfg.defaults.geometry.rotor_position_coeffs_mm` | 6-by-7 矩阵 | mm | 关闭旋翼位置查表时，用于描述各旋翼随短舱倾转角变化的位置系数表。 | `RUN_ME.m` |
+| 桨叶弦长 | `cfg.defaults.chord_m` | `0.20264354` | m | 关闭弦长查表时使用的常值公开缺省弦长。 | `RUN_ME.m` |
+| 桨叶负扭 | `cfg.defaults.pretwist_root_deg`, `pretwist_tip_deg` | `19.279996`, `-6.276289` | deg | 关闭负扭查表时使用的从根部侧到尖部侧的简化负扭描述。 | `RUN_ME.m` |
+| 旋翼翼型缺省模型 | `cfg.defaults.airfoil.*` | `cl_alpha=5.579842`, `cl_max=1.134702`, `cd0=0.010150`, `cd_alpha2=1.758467` | 混合 | 关闭翼型查表时使用的简化升力斜率、升力限幅和阻力形状参数。 | `RUN_ME.m` |
+| 机身参考量 | `cfg.fuselage.reference_area_m2`, `mean_aero_chord_m`, `span_m` | `14.41`, `1.31`, `12` | m^2, m, m | 缺省机身/固定翼气动系数使用的参考面积、参考弦长和参考展长。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 机身缺省气动 | `cfg.defaults.fuselage.*` | 见 `RUN_ME.m` | 混合 | 简化的基础阻力、升力、俯仰力矩、侧力、航向力矩和滚转力矩系数参数。 | `RUN_ME.m` |
+| 固定翼舵面 | `cfg.defaults.controls.elevator`, `rudder`, `aileron` | 见 `RUN_ME.m` | per rad | 关闭舵面 lookup 或 Excel 数据时使用的缺省舵面增量系数。 | `RUN_ME.m` |
+| 操纵混合 | `cfg.control_blend.*` | 启用，按倾转角，`sincos` | - | 随短舱倾转角在旋翼操纵通道和固定翼舵面通道之间分配操纵量。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 动导数 | `cfg.aero.dynamic_derivatives.*` | 可选 | 混合 | 可选的整机动态气动导数修正，通过外层接口开启或修改。 | `RUN_ME.m` |
 
 ## 配平输出
 

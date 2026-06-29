@@ -106,89 +106,29 @@ The fast MEX path is intended for the numeric default/disk model. It does not su
 
 The default model is intentionally simple and public-friendly. Important parameters are exposed in `RUN_ME.m` and `RUN_RESPONSE_SIMULINK_SETUP.m`.
 
-Common vehicle and environment parameters:
+The values below are public example defaults. They are intended for testing, dissemination, and code verification rather than representing a private vehicle configuration.
 
-```matlab
-cfg.environment.rho_kg_m3
-cfg.environment.gravity_m_s2
-cfg.vehicle.mass_kg
-cfg.vehicle.inertia_kg_m2   % [Ixx Iyy Izz]
-```
-
-Rotor parameters:
-
-```matlab
-cfg.rotor.radius_m
-cfg.rotor.blade_count
-cfg.rotor.omega_rad_s
-cfg.rotor.flap_inertia_kg_m2
-cfg.rotor.flap_spring_nm_rad
-cfg.rotor.rotational_direction
-cfg.rotor.blade_element_count
-cfg.rotor.azimuth_steps
-cfg.rotor.flap_model        % "blade" or "disk"
-cfg.rotor.flap_integrator
-cfg.rotor.inflow_model
-```
-
-Default rotor geometry uses a compact analytic form for each rotor:
-
-```matlab
-x = x0 + x_cos*cos(tilt) + x_sin*sin(tilt)
-y = y0
-z = z0 + z_cos*cos(tilt) + z_sin*sin(tilt)
-```
-
-The coefficients are stored in:
-
-```matlab
-cfg.defaults.geometry.rotor_position_coeffs_mm
-```
-
-Default rotor airfoil and blade planform:
-
-```matlab
-cfg.defaults.chord_m
-cfg.defaults.pretwist_root_deg
-cfg.defaults.pretwist_tip_deg
-cfg.defaults.airfoil.cl_alpha_per_rad
-cfg.defaults.airfoil.cl_max
-cfg.defaults.airfoil.cd0
-cfg.defaults.airfoil.cd_alpha2
-```
-
-Default fuselage and control parameters:
-
-```matlab
-cfg.fuselage.reference_area_m2
-cfg.fuselage.mean_aero_chord_m
-cfg.fuselage.span_m
-cfg.defaults.fuselage.cd0
-cfg.defaults.fuselage.cl_alpha_per_rad
-cfg.defaults.fuselage.cm_alpha_per_rad
-cfg.defaults.fuselage.cc_beta
-cfg.defaults.fuselage.cn_beta
-cfg.defaults.fuselage.cll_beta
-cfg.defaults.controls.elevator
-cfg.defaults.controls.rudder
-cfg.defaults.controls.aileron
-```
-
-Dynamic aerodynamic derivatives are optional and exposed through:
-
-```matlab
-cfg.aero.dynamic_derivatives.enabled
-cfg.aero.dynamic_derivatives.CLq
-cfg.aero.dynamic_derivatives.Cmq
-cfg.aero.dynamic_derivatives.Clp
-cfg.aero.dynamic_derivatives.Cnp
-cfg.aero.dynamic_derivatives.Cyp
-cfg.aero.dynamic_derivatives.Cnr
-cfg.aero.dynamic_derivatives.Clr
-cfg.aero.dynamic_derivatives.Cyr
-cfg.aero.dynamic_derivatives.Cma_dot
-cfg.aero.dynamic_derivatives.Cn_beta_dot
-```
+| Area | Parameters | Public default | Unit | Meaning in default mode | Edit in |
+|---|---|---:|---|---|---|
+| Environment | `cfg.environment.rho_kg_m3`, `cfg.environment.gravity_m_s2` | `1.225`, `9.81` | kg/m^3, m/s^2 | Air density for aerodynamic loads and gravity for trim/equations of motion. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Vehicle | `cfg.vehicle.mass_kg` | `1900` | kg | Vehicle mass used in trim force balance and response equations. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Vehicle inertia | `cfg.vehicle.inertia_kg_m2` | `[1966.5, 5245.3, 3282.7]` | kg m^2 | Body-axis inertia vector ordered as `[Ixx Iyy Izz]`. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Rotor size and speed | `cfg.rotor.radius_m`, `cfg.rotor.blade_count`, `cfg.rotor.omega_rad_s` | `1.3`, `5`, `90` | m, -, rad/s | Public rotor scale, blade count, and nominal angular speed. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Rotor flapping | `cfg.rotor.flap_inertia_kg_m2`, `cfg.rotor.flap_spring_nm_rad` | `2.25`, `16000` | kg m^2, N m/rad | Blade flapping inertia and equivalent flapping stiffness. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Rotor discretization | `cfg.rotor.blade_element_count`, `cfg.rotor.azimuth_steps` | `10`, `72` | -, - | Spanwise blade elements and azimuth stations used by the detailed rotor calculation. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Rotor airfoil sections | `cfg.rotor.airfoil_section_edges` | `[0.25, 0.40, 0.50, 0.80, 0.92]` | r/R | Radial cutoff locations for the six rotor airfoil sections. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Rotor directions | `cfg.rotor.rotational_direction` | `[1, -1, 1, -1, 1, -1]` | - | Rotation sign for rotors 1 through 6. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Rotor model options | `cfg.rotor.flap_model`, `cfg.rotor.flap_integrator`, `cfg.rotor.inflow_model` | workflow dependent | - | Selects individual-blade or disk flapping, the flap-state integrator, and fixed or uniform inflow behavior. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Default CG | `cfg.defaults.geometry.x_cg_mm`, `y_cg_mm`, `z_cg_mm` | `3554.3`, `0`, `-588.7` | mm | Public default center of gravity used when geometry lookup is disabled. | `RUN_ME.m` |
+| Default rotor positions | `cfg.defaults.geometry.rotor_position_coeffs_mm` | 6-by-7 matrix | mm | Compact coefficient table that moves each rotor with nacelle tilt when rotor-position lookup is disabled. | `RUN_ME.m` |
+| Blade chord | `cfg.defaults.chord_m` | `0.20264354` | m | Constant public default chord used when chord lookup is disabled. | `RUN_ME.m` |
+| Blade pretwist | `cfg.defaults.pretwist_root_deg`, `cfg.defaults.pretwist_tip_deg` | `19.279996`, `-6.276289` | deg | Simple root-side to tip-side pretwist description used when pretwist lookup is disabled. | `RUN_ME.m` |
+| Rotor airfoil default | `cfg.defaults.airfoil.*` | `cl_alpha=5.579842`, `cl_max=1.134702`, `cd0=0.010150`, `cd_alpha2=1.758467` | mixed | Simplified lift slope, lift limit, and drag-shape parameters used when airfoil lookup is disabled. | `RUN_ME.m` |
+| Fuselage reference | `cfg.fuselage.reference_area_m2`, `mean_aero_chord_m`, `span_m` | `14.41`, `1.31`, `12` | m^2, m, m | Reference dimensions for default fuselage and fixed-wing aerodynamic coefficients. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Fuselage default aero | `cfg.defaults.fuselage.*` | see `RUN_ME.m` | mixed | Simplified base drag, lift, moment, side force, yaw moment, and roll moment coefficient parameters. | `RUN_ME.m` |
+| Fixed-wing controls | `cfg.defaults.controls.elevator`, `rudder`, `aileron` | see `RUN_ME.m` | per rad | Default control-surface coefficient increments used when control lookup or Excel data are disabled. | `RUN_ME.m` |
+| Control blending | `cfg.control_blend.*` | enabled, tilt-angle based, `sincos` | - | Blends rotor and fixed-wing command channels as a function of nacelle tilt. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Dynamic derivatives | `cfg.aero.dynamic_derivatives.*` | optional | mixed | Optional airframe dynamic-derivative corrections; disabled or edited through the interface. | `RUN_ME.m` |
 
 ## Trim Outputs
 

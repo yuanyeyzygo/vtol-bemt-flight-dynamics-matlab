@@ -106,89 +106,29 @@ Il percorso MEX rapido è pensato per il modello numerico default/disk. Non supp
 
 Il modello default è volutamente semplice e adatto alla pubblicazione. I parametri importanti sono esposti in `RUN_ME.m` e `RUN_RESPONSE_SIMULINK_SETUP.m`.
 
-Parametri comuni di veicolo e ambiente:
+I valori sotto sono default pubblici di esempio. Servono per test, distribuzione e verifica del codice, non per rappresentare una configurazione privata di velivolo.
 
-```matlab
-cfg.environment.rho_kg_m3
-cfg.environment.gravity_m_s2
-cfg.vehicle.mass_kg
-cfg.vehicle.inertia_kg_m2   % [Ixx Iyy Izz]
-```
-
-Parametri rotore:
-
-```matlab
-cfg.rotor.radius_m
-cfg.rotor.blade_count
-cfg.rotor.omega_rad_s
-cfg.rotor.flap_inertia_kg_m2
-cfg.rotor.flap_spring_nm_rad
-cfg.rotor.rotational_direction
-cfg.rotor.blade_element_count
-cfg.rotor.azimuth_steps
-cfg.rotor.flap_model        % "blade" or "disk"
-cfg.rotor.flap_integrator
-cfg.rotor.inflow_model
-```
-
-La geometria rotore default usa una forma analitica compatta per ogni rotore:
-
-```matlab
-x = x0 + x_cos*cos(tilt) + x_sin*sin(tilt)
-y = y0
-z = z0 + z_cos*cos(tilt) + z_sin*sin(tilt)
-```
-
-I coefficienti sono memorizzati in:
-
-```matlab
-cfg.defaults.geometry.rotor_position_coeffs_mm
-```
-
-Profilo aerodinamico rotore e geometria pala default:
-
-```matlab
-cfg.defaults.chord_m
-cfg.defaults.pretwist_root_deg
-cfg.defaults.pretwist_tip_deg
-cfg.defaults.airfoil.cl_alpha_per_rad
-cfg.defaults.airfoil.cl_max
-cfg.defaults.airfoil.cd0
-cfg.defaults.airfoil.cd_alpha2
-```
-
-Parametri fusoliera e controlli default:
-
-```matlab
-cfg.fuselage.reference_area_m2
-cfg.fuselage.mean_aero_chord_m
-cfg.fuselage.span_m
-cfg.defaults.fuselage.cd0
-cfg.defaults.fuselage.cl_alpha_per_rad
-cfg.defaults.fuselage.cm_alpha_per_rad
-cfg.defaults.fuselage.cc_beta
-cfg.defaults.fuselage.cn_beta
-cfg.defaults.fuselage.cll_beta
-cfg.defaults.controls.elevator
-cfg.defaults.controls.rudder
-cfg.defaults.controls.aileron
-```
-
-Le derivate aerodinamiche dinamiche sono opzionali ed esposte tramite:
-
-```matlab
-cfg.aero.dynamic_derivatives.enabled
-cfg.aero.dynamic_derivatives.CLq
-cfg.aero.dynamic_derivatives.Cmq
-cfg.aero.dynamic_derivatives.Clp
-cfg.aero.dynamic_derivatives.Cnp
-cfg.aero.dynamic_derivatives.Cyp
-cfg.aero.dynamic_derivatives.Cnr
-cfg.aero.dynamic_derivatives.Clr
-cfg.aero.dynamic_derivatives.Cyr
-cfg.aero.dynamic_derivatives.Cma_dot
-cfg.aero.dynamic_derivatives.Cn_beta_dot
-```
+| Area | Parametri | Default pubblico | Unità | Significato in modalità default | Da modificare in |
+|---|---|---:|---|---|---|
+| Ambiente | `cfg.environment.rho_kg_m3`, `cfg.environment.gravity_m_s2` | `1.225`, `9.81` | kg/m^3, m/s^2 | Densità dell'aria per i carichi aerodinamici e gravità per trim/equazioni del moto. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Veicolo | `cfg.vehicle.mass_kg` | `1900` | kg | Massa del velivolo usata nel bilancio di trim e nelle equazioni di risposta. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Inerzia veicolo | `cfg.vehicle.inertia_kg_m2` | `[1966.5, 5245.3, 3282.7]` | kg m^2 | Vettore di inerzia assi corpo ordinato come `[Ixx Iyy Izz]`. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Dimensione e velocità rotore | `cfg.rotor.radius_m`, `blade_count`, `omega_rad_s` | `1.3`, `5`, `90` | m, -, rad/s | Scala rotore pubblica, numero di pale e velocità angolare nominale. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Flappeggio rotore | `cfg.rotor.flap_inertia_kg_m2`, `flap_spring_nm_rad` | `2.25`, `16000` | kg m^2, N m/rad | Inerzia di flappeggio pala e rigidezza equivalente di flappeggio. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Discretizzazione rotore | `cfg.rotor.blade_element_count`, `azimuth_steps` | `10`, `72` | -, - | Elementi lungo la pala e stazioni azimutali usati nel calcolo rotore dettagliato. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Sezioni profilo rotore | `cfg.rotor.airfoil_section_edges` | `[0.25, 0.40, 0.50, 0.80, 0.92]` | r/R | Posizioni radiali di separazione per le sei sezioni di profilo rotore. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Verso di rotazione | `cfg.rotor.rotational_direction` | `[1, -1, 1, -1, 1, -1]` | - | Segno di rotazione dei rotori da 1 a 6. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Opzioni modello rotore | `cfg.rotor.flap_model`, `flap_integrator`, `inflow_model` | dipende dal flusso | - | Seleziona flappeggio pala per pala o disco, integratore degli stati di flappeggio e comportamento dell'inflow. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| CG default | `cfg.defaults.geometry.x_cg_mm`, `y_cg_mm`, `z_cg_mm` | `3554.3`, `0`, `-588.7` | mm | Centro di gravità pubblico default quando il lookup della geometria è disattivato. | `RUN_ME.m` |
+| Posizioni rotore default | `cfg.defaults.geometry.rotor_position_coeffs_mm` | matrice 6-by-7 | mm | Tabella compatta di coefficienti che muove ogni rotore con il tilt della nacella quando il lookup posizione rotore è disattivato. | `RUN_ME.m` |
+| Corda pala | `cfg.defaults.chord_m` | `0.20264354` | m | Corda costante pubblica default quando il lookup della corda è disattivato. | `RUN_ME.m` |
+| Pretwist pala | `cfg.defaults.pretwist_root_deg`, `pretwist_tip_deg` | `19.279996`, `-6.276289` | deg | Descrizione semplificata del pretwist dal lato radice al lato punta quando il lookup è disattivato. | `RUN_ME.m` |
+| Profilo rotore default | `cfg.defaults.airfoil.*` | `cl_alpha=5.579842`, `cl_max=1.134702`, `cd0=0.010150`, `cd_alpha2=1.758467` | misto | Parametri semplificati di pendenza della portanza, limite di portanza e forma della resistenza quando il lookup profilo è disattivato. | `RUN_ME.m` |
+| Riferimenti fusoliera | `cfg.fuselage.reference_area_m2`, `mean_aero_chord_m`, `span_m` | `14.41`, `1.31`, `12` | m^2, m, m | Dimensioni di riferimento per coefficienti aerodinamici default di fusoliera e ala fissa. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Aereo fusoliera default | `cfg.defaults.fuselage.*` | vedi `RUN_ME.m` | misto | Parametri semplificati di resistenza, portanza, momento di beccheggio, forza laterale, momento d'imbardata e momento di rollio. | `RUN_ME.m` |
+| Controlli ala fissa | `cfg.defaults.controls.elevator`, `rudder`, `aileron` | vedi `RUN_ME.m` | per rad | Incrementi di coefficiente default quando lookup o dati Excel delle superfici sono disattivati. | `RUN_ME.m` |
+| Miscelazione controlli | `cfg.control_blend.*` | attiva, basata sul tilt, `sincos` | - | Distribuisce i canali di comando tra rotore e ala fissa in funzione del tilt della nacella. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Derivate dinamiche | `cfg.aero.dynamic_derivatives.*` | opzionale | misto | Correzioni opzionali delle derivate aerodinamiche dinamiche della cellula. | `RUN_ME.m` |
 
 ## Output del trim
 
