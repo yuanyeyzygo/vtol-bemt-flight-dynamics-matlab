@@ -62,13 +62,21 @@ out = RUN_FAST_DISK_MEX_RESPONSE(2.0);
 
 ## Main Switches / 主要开关
 
-The main interface is `RUN_ME.m`.
+Each workflow has its own entry script. Where lookup data are supported, the data-source switches use the same names.
 
-主要接口在 `RUN_ME.m` 中。
+三条工作流有各自的入口脚本；在支持查表数据的工作流中，数据源开关名称保持一致。
+
+### 1. MATLAB Individual-Blade / MATLAB 单片桨叶
+
+Use `RUN_ME.m` for trim, stability derivatives, and control derivatives. This workflow uses the detailed individual-blade rotor model.
+
+使用 `RUN_ME.m` 进行配平、稳定性导数和操纵导数计算。该工作流使用细节版单片桨叶模型。
 
 ```matlab
 data_mode = "default";          % "default" or "lookup"
 aero_database_mode = data_mode; % "default", "lookup", or "excel"
+
+cfg.rotor.flap_model = "blade";
 
 cfg.switch.geometry        = data_mode;
 cfg.switch.rotor_positions = data_mode;
@@ -79,13 +87,60 @@ cfg.switch.fuselage        = aero_database_mode;
 cfg.switch.controls        = aero_database_mode;
 ```
 
-Use `default` to run without private data. Use `lookup` or `excel` when user-provided files are available in `data/`.
+`default` runs without private data. `lookup` uses txt lookup tables in `data/`. `excel` is supported for fuselage and control-surface aerodynamics.
 
-选择 `default` 时不需要私有数据。选择 `lookup` 或 `excel` 时，用户需要把自己的数据文件放在 `data/` 中。
+`default` 不需要私有数据；`lookup` 使用 `data/` 中的 txt 查表；机身和舵面气动也支持 `excel` 工作簿。
 
-For fuselage and control-surface aerodynamics, both `lookup` txt files and a single `excel` workbook are supported. `txt` files are useful for minimal numeric tables. The Excel workbook is usually easier for distributing multi-sheet base-aero and WL/WR/VL/VR control-surface data.
+### 2. Slow Simulink Individual-Blade / 慢速 Simulink 单片桨叶
 
-对于机身和舵面气动数据，程序同时支持 `lookup` 的 txt 文件和单个 `excel` 工作簿。txt 适合最小化纯数值表；Excel 更适合分 sheet 管理基础气动和 WL/WR/VL/VR 舵面数据。
+Use `RUN_RESPONSE_SIMULINK_SETUP.m` and select the blade model before setup:
+
+使用 `RUN_RESPONSE_SIMULINK_SETUP.m`，并在 setup 前选择单片桨叶模型：
+
+```matlab
+flap_model_override = "blade";
+RUN_RESPONSE_SIMULINK_SETUP
+```
+
+Inside `RUN_RESPONSE_SIMULINK_SETUP.m`, the same data-source switches are used:
+
+在 `RUN_RESPONSE_SIMULINK_SETUP.m` 内部，数据源开关名称与 MATLAB 单片桨叶工作流一致：
+
+```matlab
+data_mode = "default";          % "default" or "lookup"
+aero_database_mode = data_mode; % "default", "lookup", or "excel"
+cfg.rotor.flap_model = requested_flap_model;  % "blade"
+```
+
+This path can use `default`, `lookup`, or `excel`, but it is slow because it evaluates the detailed individual-blade response in Simulink.
+
+这一路径可以使用 `default`、`lookup` 或 `excel`，但由于在 Simulink 中计算细节版单片桨叶响应，速度较慢。
+
+### 3. Fast Simulink Disk-Flap / 快速 Simulink 整体桨盘
+
+Use the default disk model setup and then run the generated fast model:
+
+使用默认整体桨盘 setup，然后运行生成的快速模型：
+
+```matlab
+RUN_RESPONSE_SIMULINK_SETUP
+out = RUN_FAST_DISK_MEX_RESPONSE(2.0);
+```
+
+For this workflow, keep the public default data path:
+
+这一路径应保持公开 default 数据路径：
+
+```matlab
+data_mode = "default";
+aero_database_mode = "default";
+cfg.rotor.flap_model = "disk";
+cfg.response.compile_mex = true;
+```
+
+The fast MEX path is intended for the numeric default/disk model. It does not support the full lookup-table path. `RUN_FAST_DISK_MEX_RESPONSE` only runs the already generated Simulink/MEX setup; it has no aerodynamic data switches.
+
+快速 MEX 路径面向数值化的 default/整体桨盘模型，不支持完整 lookup table 路径。`RUN_FAST_DISK_MEX_RESPONSE` 只运行已经生成的 Simulink/MEX setup，本身没有气动数据开关。
 
 ## Default Model / 缺省模型
 
