@@ -118,7 +118,26 @@ C_b2e = body_to_earth_matrix_step(phi, theta, psi);
 dx(10:12) = C_b2e * [u; v; w];
 end
 
+function rho_current = response_density_from_state_step(x, sim_model)
+rho_current = sim_model.rho;
+use_isa = false;
+if isfield(sim_model, 'environment_use_isa')
+    use_isa = logical(sim_model.environment_use_isa);
+end
+if use_isa
+    altitude_m = sim_model.initial_altitude_m - x(12);
+    if isfield(sim_model, 'altitude_min_m')
+        altitude_m = max(altitude_m, sim_model.altitude_min_m);
+    end
+    if isfield(sim_model, 'altitude_max_m')
+        altitude_m = min(altitude_m, sim_model.altitude_max_m);
+    end
+    rho_current = isa_atmosphere(altitude_m);
+end
+end
+
 function [total_forces, next_rotor_states, inflow_info] = response_total_forces_step(x, rotor_states, rotor_controls, fixed_controls, rotor_tilt_angles, sim_model, state_dt_s)
+rho_current = response_density_from_state_step(x, sim_model);
 velo_body = x(1:3);
 angular_velocity = x(4:6);
 acceleration = zeros(3,1);
@@ -145,7 +164,7 @@ if use_parallel_rotors
     parfor rotor_number = 1:n_rotors
         [forces_j, state_next, vi_current, vi_qs, tau_s] = response_one_rotor_step( ...
             rotor_number, rotor_states{rotor_number}, theta_vec, rotor_tilt_angles, ...
-            velo_body, angular_velocity, acceleration, angular_acc, sim_model, state_dt_s);
+            velo_body, angular_velocity, acceleration, angular_acc, sim_model, state_dt_s, rho_current);
         rotor_forces(:, rotor_number) = forces_j(:);
         next_tmp{rotor_number} = state_next;
         vi_tmp(rotor_number) = vi_current;
@@ -160,7 +179,7 @@ else
     for rotor_number = 1:n_rotors
         [forces_j, state_next, vi_current, vi_qs, tau_s] = response_one_rotor_step( ...
             rotor_number, rotor_states{rotor_number}, theta_vec, rotor_tilt_angles, ...
-            velo_body, angular_velocity, acceleration, angular_acc, sim_model, state_dt_s);
+            velo_body, angular_velocity, acceleration, angular_acc, sim_model, state_dt_s, rho_current);
         rotor_forces(:, rotor_number) = forces_j(:);
         next_rotor_states{rotor_number} = state_next;
         inflow_info.vi(rotor_number) = vi_current;
@@ -169,12 +188,13 @@ else
     end
 end
 
-fuse_forces = response_fuselage_forces_step(fixed_controls, velo_body, angular_velocity, sim_model);
+fuse_forces = response_fuselage_forces_step(fixed_controls, velo_body, angular_velocity, sim_model, rho_current);
 total_forces = sum(rotor_forces, 2) + fuse_forces(:);
 end
 
-function [forces_j, state_next, vi_current, vi_qs, tau_s] = response_one_rotor_step(rotor_number, rotor_state, theta_vec, rotor_tilt_angles, velo_body, angular_velocity, acceleration, angular_acc, sim_model, state_dt_s)
+function [forces_j, state_next, vi_current, vi_qs, tau_s] = response_one_rotor_step(rotor_number, rotor_state, theta_vec, rotor_tilt_angles, velo_body, angular_velocity, acceleration, angular_acc, sim_model, state_dt_s, rho_current)
 rotor_bemt_options = sim_model.rotor_bemt_options;
+rotor_bemt_options.rho_kg_m3 = rho_current;
 if response_flap_model_id_step(sim_model) == 2
     rotor_bemt_options.disk_state_dt_s = state_dt_s;
     if isfield(sim_model, 'disk_state_integrator')
@@ -202,7 +222,7 @@ end
 state_next = response_update_flap_state(rotor_state, beta_vals_j, dbeta_vals_j, sim_model);
 
 vi_current = rotor_state(end);
-[vi_qs, tau_s] = response_uniform_inflow_target_step(forces_j, velo_body, angular_velocity, rotor_tilt_angles, sim_model, rotor_number, vi_current);
+[vi_qs, tau_s] = response_uniform_inflow_target_step(forces_j, velo_body, angular_velocity, rotor_tilt_angles, sim_model, rotor_number, vi_current, rho_current, rotor_bemt_options);
 if state_dt_s > 0 && response_inflow_model_id_step(sim_model.rotor_bemt_options) == 1
     state_next(end) = vi_qs + (vi_current - vi_qs) * exp(-state_dt_s / tau_s);
 end
@@ -285,13 +305,13 @@ switch flap_model_id
 end
 end
 
-function forces = response_fuselage_forces_step(fixed_controls, velo_body, angular_velocity, sim_model)
+function forces = response_fuselage_forces_step(fixed_controls, velo_body, angular_velocity, sim_model, rho_current)
 if isfield(sim_model, 'fuselage_fun')
-    forces = sim_model.fuselage_fun(sim_model.X_CCG, fixed_controls, sim_model.rho, velo_body, angular_velocity, ...
+    forces = sim_model.fuselage_fun(sim_model.X_CCG, fixed_controls, rho_current, velo_body, angular_velocity, ...
         sim_model.tilt_angle, sim_model.cd, sim_model.cl, sim_model.cm, sim_model.cc, sim_model.cn, sim_model.cll, ...
         sim_model.elev, sim_model.rudd, sim_model.airp, sim_model.fuselage_geometry);
 else
-    forces = response_default_fuselage_forces_step(sim_model.X_CCG, fixed_controls, sim_model.rho, velo_body, ...
+    forces = response_default_fuselage_forces_step(sim_model.X_CCG, fixed_controls, rho_current, velo_body, ...
         angular_velocity, sim_model.tilt_angle, sim_model.default_fuselage, sim_model.default_controls, ...
         sim_model.fuselage_geometry);
 end
@@ -352,7 +372,7 @@ Moment = cross(X_FUSELAGE_REF, Fx_body');
 forces = [Fx_body(1); Fx_body(2); Fx_body(3); ll + Moment(1); m + Moment(2); n + Moment(3)];
 end
 
-function [vi_qs, tau_s] = response_uniform_inflow_target_step(forces_body, velo_body, angular_velocity, rotor_tilt_angles, sim_model, rotor_number, vi_current)
+function [vi_qs, tau_s] = response_uniform_inflow_target_step(forces_body, velo_body, angular_velocity, rotor_tilt_angles, sim_model, rotor_number, vi_current, rho_current, rotor_bemt_options)
 tilt = deg2rad(rotor_tilt_angles(rotor_number));
 tilt_conversion = [sin(tilt) 0 cos(tilt); 0 1 0; -cos(tilt) 0 sin(tilt)];
 force_body = forces_body(1:3);
@@ -366,8 +386,8 @@ V_inf = v_disc(1);
 V_infy = v_disc(2);
 V_z = v_disc(3);
 
-vi_qs = response_solve_quasisteady_vi_step(Tb, V_inf, V_infy, V_z, vi_current, sim_model.rho, sim_model.R);
-tau_s = response_inflow_tau_s_step(sim_model.rotor_bemt_options, sim_model.omega, sim_model.R, vi_qs);
+vi_qs = response_solve_quasisteady_vi_step(Tb, V_inf, V_infy, V_z, vi_current, rho_current, sim_model.R);
+tau_s = response_inflow_tau_s_step(rotor_bemt_options, sim_model.omega, sim_model.R, vi_qs);
 end
 
 function vi_qs = response_solve_quasisteady_vi_step(Tb, V_inf, V_infy, V_z, vi_initial, rho, R)

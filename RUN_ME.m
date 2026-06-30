@@ -55,6 +55,10 @@ cfg.data.pretwist.mat_var = 'pre_twist';
 % Environment and vehicle
 cfg.environment.rho_kg_m3 = 1.225;
 cfg.environment.gravity_m_s2 = 9.81;
+cfg.environment.use_isa = false;          % false: use rho_kg_m3; true: use ISA density
+cfg.environment.initial_altitude_m = 0;   % initial altitude above mean sea level, m
+cfg.environment.altitude_min_m = -500;    % ISA lookup lower clamp, m
+cfg.environment.altitude_max_m = 20000;   % ISA lookup upper clamp, m
 cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7]; % [Ixx Iyy Izz]
 

@@ -110,7 +110,7 @@ The values below are public example defaults. They are intended for testing, dis
 
 | Area | Parameters | Public default | Unit | Meaning in default mode | Edit in |
 |---|---|---:|---|---|---|
-| Environment | `cfg.environment.rho_kg_m3`, `cfg.environment.gravity_m_s2` | `1.225`, `9.81` | kg/m^3, m/s^2 | Air density for aerodynamic loads and gravity for trim/equations of motion. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Environment | `cfg.environment.rho_kg_m3`, `gravity_m_s2`, `use_isa`, `initial_altitude_m` | `1.225`, `9.81`, `false`, `0` | kg/m^3, m/s^2, -, m | Constant-density mode uses `rho_kg_m3`. If `use_isa = true`, trim uses ISA density at `initial_altitude_m`, and nonlinear response updates density from the current earth-axis `z` displacement. | `RUN_ME.m`, `RUN_RESPONSE.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | Vehicle | `cfg.vehicle.mass_kg` | `1900` | kg | Vehicle mass used in trim force balance and response equations. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | Vehicle inertia | `cfg.vehicle.inertia_kg_m2` | `[1966.5, 5245.3, 3282.7]` | kg m^2 | Body-axis inertia vector ordered as `[Ixx Iyy Izz]`. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | Rotor size and speed | `cfg.rotor.radius_m`, `cfg.rotor.blade_count`, `cfg.rotor.omega_rad_s` | `1.3`, `5`, `90` | m, -, rad/s | Public rotor scale, blade count, and nominal angular speed. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
@@ -219,6 +219,29 @@ cfg.controls.channel_names = {'pitch','yaw','roll'};
 cfg.controls.physical_surface_names = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.controls.surface_mixing_matrix = M;  % rows: physical surfaces, columns: channels
 cfg.controls.surface_bias_deg = b;       % optional bias for each physical surface
+```
+
+## Atmosphere And Height
+
+The environment model can be run with either constant density or ISA density:
+
+```matlab
+cfg.environment.use_isa = false;        % constant rho_kg_m3
+cfg.environment.use_isa = true;         % ISA density
+cfg.environment.initial_altitude_m = 0; % initial altitude above mean sea level
+```
+
+When ISA is enabled, trim and stability use the density at `initial_altitude_m`. In nonlinear MATLAB and Simulink response, the 12th response state is earth-axis `z` displacement with positive down. The density update therefore uses:
+
+```text
+altitude_m = initial_altitude_m - z
+```
+
+The response structure stores the evaluated history as:
+
+```matlab
+trim_results.response.altitude_history
+trim_results.response.density_history
 ```
 
 ## Simulink Response

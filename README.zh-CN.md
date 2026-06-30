@@ -110,7 +110,7 @@ cfg.response.compile_mex = true;
 
 | 类别 | 参数 | 公开缺省值 | 单位 | 缺省模式含义 | 修改位置 |
 |---|---|---:|---|---|---|
-| 环境 | `cfg.environment.rho_kg_m3`, `cfg.environment.gravity_m_s2` | `1.225`, `9.81` | kg/m^3, m/s^2 | 气动力计算使用的空气密度，以及配平/运动方程使用的重力加速度。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 环境 | `cfg.environment.rho_kg_m3`, `gravity_m_s2`, `use_isa`, `initial_altitude_m` | `1.225`, `9.81`, `false`, `0` | kg/m^3, m/s^2, -, m | 常密度模式使用 `rho_kg_m3`。如果 `use_isa = true`，配平使用 `initial_altitude_m` 对应的 ISA 密度，非线性响应中再根据地轴系 `z` 位移更新密度。 | `RUN_ME.m`, `RUN_RESPONSE.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | 整机 | `cfg.vehicle.mass_kg` | `1900` | kg | 配平力平衡和响应方程使用的整机质量。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | 转动惯量 | `cfg.vehicle.inertia_kg_m2` | `[1966.5, 5245.3, 3282.7]` | kg m^2 | 体轴系惯量，顺序为 `[Ixx Iyy Izz]`。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | 旋翼尺寸和转速 | `cfg.rotor.radius_m`, `blade_count`, `omega_rad_s` | `1.3`, `5`, `90` | m, -, rad/s | 公开缺省旋翼尺度、桨叶片数和名义角速度。 | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
@@ -219,6 +219,29 @@ cfg.controls.channel_names = {'pitch','yaw','roll'};
 cfg.controls.physical_surface_names = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.controls.surface_mixing_matrix = M;  % rows: physical surfaces, columns: channels
 cfg.controls.surface_bias_deg = b;       % optional bias for each physical surface
+```
+
+## 大气和高度
+
+环境模型可以选择常密度或 ISA 大气：
+
+```matlab
+cfg.environment.use_isa = false;        % 使用 rho_kg_m3 常密度
+cfg.environment.use_isa = true;         % 使用 ISA 密度
+cfg.environment.initial_altitude_m = 0; % 初始海拔高度
+```
+
+打开 ISA 后，配平和稳定性计算使用 `initial_altitude_m` 处的空气密度。在 MATLAB 非线性响应和 Simulink 响应中，第 12 个响应状态是地轴系 `z` 位移，正方向向下。因此密度更新使用：
+
+```text
+altitude_m = initial_altitude_m - z
+```
+
+响应结果中会保存：
+
+```matlab
+trim_results.response.altitude_history
+trim_results.response.density_history
 ```
 
 ## Simulink 响应

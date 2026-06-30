@@ -21,6 +21,7 @@ if ~exist('data_dir', 'var') || isempty(data_dir)
 end
 
 addpath(fullfile(root, 'src'));
+cfg = apply_environment_model(cfg);
 
 trim_tol = 1e-8;
 if isfield(cfg, 'trim') && isfield(cfg.trim, 'tol')
@@ -857,6 +858,10 @@ cfg = struct();
 
 cfg.environment.rho_kg_m3 = 1.225;
 cfg.environment.gravity_m_s2 = 9.81;
+cfg.environment.use_isa = false;
+cfg.environment.initial_altitude_m = 0;
+cfg.environment.altitude_min_m = -500;
+cfg.environment.altitude_max_m = 20000;
 
 cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7];
@@ -1013,6 +1018,27 @@ for ii = 1:numel(fields)
     else
         out.(name) = override.(name);
     end
+end
+end
+
+function cfg = apply_environment_model(cfg)
+cfg.environment.use_isa = logical(cfg.environment.use_isa);
+if cfg.environment.use_isa
+    altitude_m = cfg.environment.initial_altitude_m;
+    altitude_eval_m = min(max(altitude_m, cfg.environment.altitude_min_m), cfg.environment.altitude_max_m);
+    [rho, temperature_k, pressure_pa, speed_of_sound_mps] = isa_atmosphere(altitude_eval_m);
+    cfg.environment.rho_kg_m3 = rho;
+    cfg.environment.isa_trim_altitude_m = altitude_eval_m;
+    cfg.environment.isa_temperature_k = temperature_k;
+    cfg.environment.isa_pressure_pa = pressure_pa;
+    cfg.environment.isa_speed_of_sound_mps = speed_of_sound_mps;
+end
+if any(~isfinite([cfg.environment.rho_kg_m3, cfg.environment.gravity_m_s2, ...
+        cfg.environment.initial_altitude_m, cfg.environment.altitude_min_m, cfg.environment.altitude_max_m])) || ...
+        cfg.environment.rho_kg_m3 <= 0 || cfg.environment.gravity_m_s2 <= 0 || ...
+        cfg.environment.altitude_min_m >= cfg.environment.altitude_max_m
+    error('BEMTFLAP:BadEnvironment', ...
+        'Environment density/gravity/altitude settings must be finite and physically valid.');
 end
 end
 
@@ -1368,14 +1394,14 @@ if is_excel_lookup_mode(cfg.switch.fuselage)
         base_sheet = base_sheets;
     end
     [cd, cl, cm, cc, cn, cll] = build_fuselage_base_lookup_from_excel( ...
-        excel_file, base_sheet, 'linear', false, base_sheet_tilts);
+        excel_file, base_sheet, 'linear', true, base_sheet_tilts);
 elseif is_lookup_mode(cfg.switch.fuselage)
-    cd = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cd.txt'), 'linear', false);
-    cl = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cl.txt'), 'linear', false);
-    cm = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cm.txt'), 'linear', false);
-    cc = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cc.txt'), 'linear', false);
-    cn = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cn.txt'), 'linear', false);
-    cll = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cll.txt'), 'linear', false);
+    cd = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cd.txt'), 'linear', true);
+    cl = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cl.txt'), 'linear', true);
+    cm = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cm.txt'), 'linear', true);
+    cc = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cc.txt'), 'linear', true);
+    cn = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cn.txt'), 'linear', true);
+    cll = build_C_lookup_from_txt(fullfile(data_dir, 'Fuselage_cll.txt'), 'linear', true);
 else
     fuse = cfg.defaults.fuselage;
     cd.CD = @(tilt, alpha_deg) fuse.cd0 + 0.*tilt + 0.*alpha_deg;
@@ -1390,7 +1416,7 @@ if is_excel_lookup_mode(cfg.switch.controls)
     excel_file = aero_excel_file(cfg, data_dir);
     surface_sheets = optional_aero_excel_setting(cfg, 'control_surface_sheets', ...
         {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'});
-    surfaces = build_control_surface_delta_set_from_excel(excel_file, surface_sheets, 'linear', false);
+    surfaces = build_control_surface_delta_set_from_excel(excel_file, surface_sheets, 'linear', true);
     controls = struct();
     controls.type = "physical_surfaces";
     controls.physical_surfaces = surfaces;
@@ -1400,7 +1426,7 @@ if is_excel_lookup_mode(cfg.switch.controls)
     airp = controls;
 elseif is_lookup_mode(cfg.switch.controls)
     if physical_control_surface_files_exist(data_dir)
-        surfaces = build_control_surface_delta_set(data_dir, 'linear', false);
+        surfaces = build_control_surface_delta_set(data_dir, 'linear', true);
         controls = struct();
         controls.type = "physical_surfaces";
         controls.physical_surfaces = surfaces;
@@ -1410,9 +1436,9 @@ elseif is_lookup_mode(cfg.switch.controls)
         rudd = controls;
         airp = controls;
     else
-        elev = build_fuselage_elevator_lookup(fullfile(data_dir, 'Fuselage_elevator.txt'), 'linear', false);
-        rudd = build_fuselage_elevator_lookup(fullfile(data_dir, 'Fuselage_rudder.txt'), 'linear', false);
-        airp = build_fuselage_elevator_lookup(fullfile(data_dir, 'Fuselage_roll.txt'), 'linear', false);
+        elev = build_fuselage_elevator_lookup(fullfile(data_dir, 'Fuselage_elevator.txt'), 'linear', true);
+        rudd = build_fuselage_elevator_lookup(fullfile(data_dir, 'Fuselage_rudder.txt'), 'linear', true);
+        airp = build_fuselage_elevator_lookup(fullfile(data_dir, 'Fuselage_roll.txt'), 'linear', true);
     end
 else
     ctrl = cfg.defaults.controls;
@@ -2382,6 +2408,10 @@ model.rotational_direction = rotational_direction;
 model.rotor_locations = rotor_locations;
 model.X_CCG = X_CCG;
 model.rho = rho;
+model.environment_use_isa = logical(cfg.environment.use_isa);
+model.initial_altitude_m = cfg.environment.initial_altitude_m;
+model.altitude_min_m = cfg.environment.altitude_min_m;
+model.altitude_max_m = cfg.environment.altitude_max_m;
 model.mass_kg = mass_kg;
 model.inertia_kg_m2 = inertia_kg_m2;
 model.gravity_m_s2 = gravity_m_s2;
@@ -2406,6 +2436,8 @@ control_history = zeros(n_steps+1, 7);
 rotor_vi_history = zeros(n_steps+1, n_rotors);
 rotor_vi_qs_history = zeros(n_steps+1, n_rotors);
 rotor_tau_history = zeros(n_steps+1, n_rotors);
+density_history = zeros(n_steps+1, 1);
+altitude_history = zeros(n_steps+1, 1);
 state_history(1,:) = state0(:).';
 x = state0(:);
 
@@ -2414,6 +2446,7 @@ for ii = 1:n_steps+1
     [rotor_controls, fixed_controls] = response_controls_at_time(t, rotor_controls_trim, fixed_controls_trim, control_delta, fixed_delta, step_time_s);
     rotor_vi_history(ii,:) = response_rotor_vi(rotor_states);
     [forces_now, ~, inflow_now] = response_total_forces(x, rotor_states, rotor_controls, fixed_controls, model);
+    [density_history(ii), altitude_history(ii)] = response_density_from_state(x, model);
     force_history(ii,:) = forces_now(:).';
     control_history(ii,:) = [rotor_controls(:); fixed_controls(:)].';
     rotor_vi_qs_history(ii,:) = inflow_now.vi_qs;
@@ -2456,6 +2489,8 @@ response.control_history = control_history;
 response.rotor_vi_history = rotor_vi_history;
 response.rotor_vi_qs_history = rotor_vi_qs_history;
 response.rotor_tau_history = rotor_tau_history;
+response.density_history = density_history;
+response.altitude_history = altitude_history;
 response.final_state = state_history(end,:).';
 response.final_rotor_states = rotor_states;
 response.state_order = ["u","v","w","p","q","r","phi","theta","psi","x","y","z"];
@@ -2527,6 +2562,9 @@ function [total_forces, next_rotor_states, inflow_info] = response_total_forces(
 if nargin < 6
     state_dt_s = 0;
 end
+rho_current = response_density_from_state(x, model);
+rotor_bemt_options = model.rotor_bemt_options;
+rotor_bemt_options.rho_kg_m3 = rho_current;
 velo_body = x(1:3);
 angular_velocity = x(4:6);
 acceleration = zeros(3,1);
@@ -2546,25 +2584,43 @@ for rotor_number = 1:n_rotors
         model.R, model.Nb, model.omega, model.I_beta, velo_body, model.k_beta, ...
         model.rotor_profile, theta_vec(rotor_number), model.rotor_tilt_angles(rotor_number), ...
         angular_velocity, model.rotational_direction(rotor_number), acceleration, angular_acc, ...
-        model.rotor_bemt_options, model.rotor_locations{rotor_number});
+        rotor_bemt_options, model.rotor_locations{rotor_number});
     rotor_forces(:, rotor_number) = forces_j(:);
     state_next = rotor_states{rotor_number};
     state_next = response_update_flap_state(state_next, beta_vals_j, dbeta_vals_j, model);
     vi_current = rotor_states{rotor_number}(end);
-    [vi_qs, tau_s] = response_uniform_inflow_target(forces_j, velo_body, angular_velocity, model, rotor_number, vi_current);
+    [vi_qs, tau_s] = response_uniform_inflow_target(forces_j, velo_body, angular_velocity, model, rotor_number, vi_current, rho_current, rotor_bemt_options);
     inflow_info.vi(rotor_number) = vi_current;
     inflow_info.vi_qs(rotor_number) = vi_qs;
     inflow_info.tau_s(rotor_number) = tau_s;
-    if state_dt_s > 0 && model.rotor_bemt_options.inflow_model == "uniform"
+    if state_dt_s > 0 && rotor_bemt_options.inflow_model == "uniform"
         state_next(end) = vi_qs + (vi_current - vi_qs) * exp(-state_dt_s / tau_s);
     end
     next_rotor_states{rotor_number} = state_next;
 end
 
-fuse_forces = fuselage_aerodynamics(model.X_CCG, fixed_controls, model.rho, velo_body, angular_velocity, ...
+fuse_forces = fuselage_aerodynamics(model.X_CCG, fixed_controls, rho_current, velo_body, angular_velocity, ...
     model.tilt_angle, model.cd, model.cl, model.cm, model.cc, model.cn, model.cll, ...
     model.elev, model.rudd, model.airp, model.fuselage_geometry);
 total_forces = sum(rotor_forces, 2) + fuse_forces(:);
+end
+
+function [rho_current, altitude_m] = response_density_from_state(x, model)
+rho_current = model.rho;
+altitude_m = 0;
+if isfield(model, 'initial_altitude_m')
+    altitude_m = model.initial_altitude_m - x(12);
+end
+if isfield(model, 'environment_use_isa') && model.environment_use_isa
+    altitude_eval_m = altitude_m;
+    if isfield(model, 'altitude_min_m')
+        altitude_eval_m = max(altitude_eval_m, model.altitude_min_m);
+    end
+    if isfield(model, 'altitude_max_m')
+        altitude_eval_m = min(altitude_eval_m, model.altitude_max_m);
+    end
+    rho_current = isa_atmosphere(altitude_eval_m);
+end
 end
 
 function state_next = response_update_flap_state(state_current, beta_vals, dbeta_vals, model)
@@ -2590,7 +2646,7 @@ for rotor_number = 1:n_rotors
 end
 end
 
-function [vi_qs, tau_s] = response_uniform_inflow_target(forces_body, velo_body, angular_velocity, model, rotor_number, vi_current)
+function [vi_qs, tau_s] = response_uniform_inflow_target(forces_body, velo_body, angular_velocity, model, rotor_number, vi_current, rho_current, rotor_bemt_options)
 tilt = deg2rad(model.rotor_tilt_angles(rotor_number));
 tilt_conversion = [sin(tilt) 0 cos(tilt); 0 1 0; -cos(tilt) 0 sin(tilt)];
 force_body = forces_body(1:3);
@@ -2604,8 +2660,8 @@ V_inf = v_disc(1);
 V_infy = v_disc(2);
 V_z = v_disc(3);
 
-vi_qs = response_solve_quasisteady_vi(Tb, V_inf, V_infy, V_z, vi_current, model.rho, model.R);
-tau_s = response_inflow_tau_s(model.rotor_bemt_options, model.omega, model.R, vi_qs);
+vi_qs = response_solve_quasisteady_vi(Tb, V_inf, V_infy, V_z, vi_current, rho_current, model.R);
+tau_s = response_inflow_tau_s(rotor_bemt_options, model.omega, model.R, vi_qs);
 end
 
 function vi_qs = response_solve_quasisteady_vi(Tb, V_inf, V_infy, V_z, vi_initial, rho, R)

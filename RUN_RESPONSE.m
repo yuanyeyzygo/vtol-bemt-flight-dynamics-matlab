@@ -39,6 +39,10 @@ cfg.data.pretwist.mat_var = 'pre_twist';
 
 cfg.environment.rho_kg_m3 = 1.225;
 cfg.environment.gravity_m_s2 = 9.81;
+cfg.environment.use_isa = false;
+cfg.environment.initial_altitude_m = 0;
+cfg.environment.altitude_min_m = -500;
+cfg.environment.altitude_max_m = 20000;
 cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7];
 

@@ -110,7 +110,7 @@ Les valeurs ci-dessous sont des valeurs publiques d'exemple. Elles servent aux e
 
 | Domaine | Paramètres | Valeur publique par défaut | Unité | Signification en mode default | À modifier dans |
 |---|---|---:|---|---|---|
-| Environnement | `cfg.environment.rho_kg_m3`, `cfg.environment.gravity_m_s2` | `1.225`, `9.81` | kg/m^3, m/s^2 | Densité de l'air pour les charges aérodynamiques et gravité pour le trim/les équations du mouvement. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Environnement | `cfg.environment.rho_kg_m3`, `gravity_m_s2`, `use_isa`, `initial_altitude_m` | `1.225`, `9.81`, `false`, `0` | kg/m^3, m/s^2, -, m | Le mode à densité constante utilise `rho_kg_m3`. Si `use_isa = true`, le trim utilise la densité ISA à `initial_altitude_m`, et la réponse non linéaire met à jour la densité avec le déplacement `z` en axes terre. | `RUN_ME.m`, `RUN_RESPONSE.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | Véhicule | `cfg.vehicle.mass_kg` | `1900` | kg | Masse du véhicule utilisée dans l'équilibre de trim et les équations de réponse. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | Inertie véhicule | `cfg.vehicle.inertia_kg_m2` | `[1966.5, 5245.3, 3282.7]` | kg m^2 | Vecteur d'inertie axes corps, ordonné `[Ixx Iyy Izz]`. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
 | Taille et vitesse rotor | `cfg.rotor.radius_m`, `blade_count`, `omega_rad_s` | `1.3`, `5`, `90` | m, -, rad/s | Échelle rotor publique, nombre de pales et vitesse angulaire nominale. | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
@@ -219,6 +219,29 @@ cfg.controls.channel_names = {'pitch','yaw','roll'};
 cfg.controls.physical_surface_names = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.controls.surface_mixing_matrix = M;  % rows: physical surfaces, columns: channels
 cfg.controls.surface_bias_deg = b;       % optional bias for each physical surface
+```
+
+## Atmosphère Et Altitude
+
+Le modèle d'environnement peut utiliser une densité constante ou la densité ISA :
+
+```matlab
+cfg.environment.use_isa = false;        % densité constante rho_kg_m3
+cfg.environment.use_isa = true;         % densité ISA
+cfg.environment.initial_altitude_m = 0; % altitude initiale au-dessus du niveau moyen de la mer
+```
+
+Lorsque l'ISA est activée, le trim et les dérivées de stabilité utilisent la densité à `initial_altitude_m`. Dans la réponse non linéaire MATLAB et Simulink, le 12e état de réponse est le déplacement `z` en axes terre, positif vers le bas. La mise à jour de densité utilise donc :
+
+```text
+altitude_m = initial_altitude_m - z
+```
+
+La structure de réponse enregistre :
+
+```matlab
+trim_results.response.altitude_history
+trim_results.response.density_history
 ```
 
 ## Réponse Simulink
