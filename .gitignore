@@ -21,3 +21,7 @@ vtol_bemt_*_with_data*/
 tp*/
 excel_vs_txt_*.txt
 full_lookup_*.csv
+RUN_XPLANE*.m
+src/xplane_udp_*.m
+src/vtol_sas*.m
+last_xplane_*.mat

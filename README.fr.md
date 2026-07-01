@@ -17,6 +17,34 @@ Références utiles :
 
 Les données aérodynamiques privées de lookup ne sont pas incluses. Le code peut fonctionner en mode `default` sans dossier `data/`. Les formats lookup et Excel sont décrits ci-dessous pour permettre aux utilisateurs d'ajouter leurs propres données.
 
+## Index De Documentation
+
+| Besoin | Section à lire | Fichiers principaux |
+|---|---|---|
+| Choisir le bon script d'entrée | [Carte Des Points D'Entrée](#carte-des-points-dentrée) | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Lancer le trim, les dérivées de stabilité et les dérivées de contrôle | [Démarrage rapide](#démarrage-rapide), [MATLAB pale par pale](#1-matlab-pale-par-pale), [Sorties de trim](#sorties-de-trim) | `RUN_ME.m`, `RUN_TRIM_AND_STABILITY.m` |
+| Choisir les données `default`, `lookup` ou `excel` | [Commutateurs principaux](#commutateurs-principaux), [Données lookup](#données-lookup), [Base aérodynamique Excel](#base-aérodynamique-excel) | `RUN_ME.m`, `data_templates/` |
+| Comprendre les paramètres publics par défaut | [Modèle par défaut](#modèle-par-défaut) | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| Lancer la réponse Simulink lente haute fidélité | [Simulink lent pale par pale](#2-simulink-lent-pale-par-pale), [Réponse Simulink](#réponse-simulink) | `CREATE_RESPONSE_SIMULINK_MODEL.m`, `VTOL_RESPONSE_SIMULINK.slx` |
+| Lancer la réponse Simulink rapide proche temps réel | [Simulink rapide disque battant](#3-simulink-rapide-disque-battant), [Réponse Simulink](#réponse-simulink) | `RUN_RESPONSE_SIMULINK_SETUP.m`, `VTOL_RESPONSE_SIMULINK_MEX.slx` |
+| Vérifier l'ordre des états, commandes et sorties | [Sorties de trim](#sorties-de-trim), [Réponse Simulink](#réponse-simulink) | `trim_results`, `out.x_sim` |
+| Ajouter des tables lookup txt | [Données lookup](#données-lookup) | `data/` |
+| Ajouter une base aérodynamique Excel | [Base aérodynamique Excel](#base-aérodynamique-excel) | `data_templates/` |
+| Confirmer ce qui ne doit pas être publié | [Politique du dépôt public](#politique-du-dépôt-public) | `.gitignore` |
+
+## Carte Des Points D'Entrée
+
+| Fichier | À utiliser quand | Modèle rotor | Données prises en charge | Sortie principale |
+|---|---|---|---|---|
+| `RUN_ME.m` | Vous voulez modifier directement les réglages de trim, stabilité et dérivées de contrôle dans un fichier interface. | pale par pale | `default`, `lookup`, et `excel` pour fuselage/commandes | `trim_results` |
+| `RUN_TRIM_AND_STABILITY.m` | Vous voulez une entrée compacte pour le workflow MATLAB de trim et dérivées. | pale par pale | suit la configuration de style `RUN_ME.m` | `trim_results` |
+| `RUN_RESPONSE_SIMULINK_SETUP.m` | Vous voulez trimmer d'abord, puis générer et initialiser un modèle de réponse Simulink. | pale par pale ou disque | `default`; le chemin détaillé pale par pale peut aussi utiliser les données lookup/Excel prises en charge | variables du base workspace et modèle Simulink |
+| `RUN_FAST_DISK_MEX_RESPONSE.m` | Vous voulez lancer le modèle rapide Simulink/MEX déjà généré. | disque battant | chemin public `default` seulement | sortie Simulink `out` |
+| `CREATE_RESPONSE_SIMULINK_MODEL.m` | Vous voulez régénérer explicitement le modèle Simulink lent pale par pale. | pale par pale | mêmes données que le workflow de réponse lent | `VTOL_RESPONSE_SIMULINK.slx` |
+| `CREATE_RESPONSE_SIMULINK_MEX_MODEL.m` | Vous voulez régénérer explicitement le modèle Simulink rapide disque/MEX. | disque battant | chemin public `default` seulement | `VTOL_RESPONSE_SIMULINK_MEX.slx` |
+
+Le chemin normal est `RUN_ME.m` pour les études de trim et dérivées, et `RUN_RESPONSE_SIMULINK_SETUP.m` pour la simulation de réponse.
+
 ## Démarrage rapide
 
 Ouvrir MATLAB dans ce dossier.
@@ -259,22 +287,24 @@ Le script setup est le seul endroit où modifier le pas d'échantillonnage de r�
 cfg.trim.tilt_angle_deg
 cfg.trim.speed_mps
 cfg.response.dt_s
-cfg.response.control_delta
-cfg.response.fixed_wing_control_delta
+cfg.response.pilot_stick
+cfg.response.pilot_stick_to_control_gain_deg
+cfg.response.control_delta              % incrément direct optionnel de debug
+cfg.response.fixed_wing_control_delta   % incrément fixe optionnel de debug
 cfg.response.rotor_tilt_angle_deg
 ```
 
 `RUN_FAST_DISK_MEX_RESPONSE` ne contient aucun paramètre de dynamique du vol. Il exécute seulement le modèle Simulink courant avec les variables du base workspace générées par `RUN_RESPONSE_SIMULINK_SETUP`.
 
-Le modèle Simulink contient une interface simple de changement de commande :
+Le modèle Simulink contient seulement une interface manche pilote en boucle ouverte :
 
 ```text
-Rotor control delta  = [collective, longitudinal, lateral, yaw]
-Fixed-wing control   = [pitch, yaw, roll]
-Rotor tilt input     = six nacelle tilt angles in deg
+Pilot stick input = [collective, pitch, roll, yaw], normalisé
+Stick gain        = échelle de commande plein manche en deg
+Rotor tilt input  = six angles de nacelle en deg
 ```
 
-Le modèle d'exemple utilise deux blocs Step additionnés dans le canal collectif, et des constantes pour les autres canaux. Les utilisateurs peuvent remplacer ces blocs par les sorties de leur propre contrôleur.
+Le modèle généré ne contient pas de loi de commande en boucle fermée. Les utilisateurs peuvent remplacer la source de manche constante par un joystick, un signal d'essai ou une autre source de commande en boucle ouverte.
 
 `out.x_sim` utilise l'ordre de 12 états suivant :
 

@@ -17,6 +17,34 @@
 
 本仓库不包含私有气动查表数据。程序在 `default` 模式下不需要 `data/` 文件夹即可运行。下文给出 lookup 和 Excel 数据格式，用户可以放入自己的数据。
 
+## 文档索引
+
+| 你要做的事 | 阅读章节 | 主要文件 |
+|---|---|---|
+| 判断应该运行哪个入口脚本 | [入口文件速查](#入口文件速查) | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 运行配平、稳定性导数和操纵导数 | [快速开始](#快速开始)、[MATLAB 单片桨叶](#1-matlab-单片桨叶)、[配平输出](#配平输出) | `RUN_ME.m`, `RUN_TRIM_AND_STABILITY.m` |
+| 选择 `default`、`lookup` 或 `excel` 数据 | [主要开关](#主要开关)、[查表数据](#查表数据)、[Excel 气动数据库](#excel-气动数据库) | `RUN_ME.m`, `data_templates/` |
+| 理解公开缺省参数 | [缺省模型](#缺省模型) | `RUN_ME.m`, `RUN_RESPONSE_SIMULINK_SETUP.m` |
+| 运行慢速高精度 Simulink 响应 | [慢速 Simulink 单片桨叶](#2-慢速-simulink-单片桨叶)、[Simulink 响应](#simulink-响应) | `CREATE_RESPONSE_SIMULINK_MODEL.m`, `VTOL_RESPONSE_SIMULINK.slx` |
+| 运行快速准实时 Simulink 响应 | [快速 Simulink 整体桨盘](#3-快速-simulink-整体桨盘)、[Simulink 响应](#simulink-响应) | `RUN_RESPONSE_SIMULINK_SETUP.m`, `VTOL_RESPONSE_SIMULINK_MEX.slx` |
+| 查看状态、操纵和输出顺序 | [配平输出](#配平输出)、[Simulink 响应](#simulink-响应) | `trim_results`, `out.x_sim` |
+| 添加自定义 txt 查表 | [查表数据](#查表数据) | `data/` |
+| 添加 Excel 气动数据库 | [Excel 气动数据库](#excel-气动数据库) | `data_templates/` |
+| 确认哪些内容不能发布 | [开源仓库数据原则](#开源仓库数据原则) | `.gitignore` |
+
+## 入口文件速查
+
+| 文件 | 什么时候用 | 旋翼模型 | 数据支持 | 主要输出 |
+|---|---|---|---|---|
+| `RUN_ME.m` | 希望直接在一个接口文件里修改配平、稳定性和操纵导数设置。 | 单片桨叶 | `default`、`lookup`，机身/舵面还支持 `excel` | `trim_results` |
+| `RUN_TRIM_AND_STABILITY.m` | 希望用更简短的入口运行 MATLAB 配平和导数计算流程。 | 单片桨叶 | 跟随 `RUN_ME.m` 风格的配置 | `trim_results` |
+| `RUN_RESPONSE_SIMULINK_SETUP.m` | 希望先配平，再生成并初始化 Simulink 响应模型。 | 单片桨叶或整体桨盘 | `default`；细节版单片桨叶路径也可使用支持的 lookup/Excel 数据 | base workspace 响应变量和 Simulink 模型 |
+| `RUN_FAST_DISK_MEX_RESPONSE.m` | 希望直接运行已经生成好的快速 Simulink/MEX 整体桨盘模型。 | 整体桨盘 | 公开 `default` 路径 | Simulink 输出 `out` |
+| `CREATE_RESPONSE_SIMULINK_MODEL.m` | 希望显式重新生成慢速单片桨叶 Simulink 模型。 | 单片桨叶 | 与慢速响应工作流相同 | `VTOL_RESPONSE_SIMULINK.slx` |
+| `CREATE_RESPONSE_SIMULINK_MEX_MODEL.m` | 希望显式重新生成快速整体桨盘/MEX Simulink 模型。 | 整体桨盘 | 公开 `default` 路径 | `VTOL_RESPONSE_SIMULINK_MEX.slx` |
+
+正常使用时，配平和导数计算从 `RUN_ME.m` 进入；响应仿真从 `RUN_RESPONSE_SIMULINK_SETUP.m` 进入。
+
 ## 快速开始
 
 在 MATLAB 中打开本文件夹。
@@ -259,22 +287,24 @@ out = RUN_FAST_DISK_MEX_RESPONSE(2.0);
 cfg.trim.tilt_angle_deg
 cfg.trim.speed_mps
 cfg.response.dt_s
-cfg.response.control_delta
-cfg.response.fixed_wing_control_delta
+cfg.response.pilot_stick
+cfg.response.pilot_stick_to_control_gain_deg
+cfg.response.control_delta              % 可选直接控制调试增量
+cfg.response.fixed_wing_control_delta   % 可选固定翼舵面调试增量
 cfg.response.rotor_tilt_angle_deg
 ```
 
 `RUN_FAST_DISK_MEX_RESPONSE` 内部没有飞行动力学参数。它只使用 `RUN_RESPONSE_SIMULINK_SETUP` 生成的 base workspace 变量运行当前 Simulink 模型。
 
-Simulink 模型中包含一个简单的控制扰动接口：
+Simulink 模型只包含开环杆量接口：
 
 ```text
-Rotor control delta  = [collective, longitudinal, lateral, yaw]
-Fixed-wing control   = [pitch, yaw, roll]
-Rotor tilt input     = six nacelle tilt angles in deg
+Pilot stick input = [collective, pitch, roll, yaw]，归一化杆量
+Stick gain        = 满杆对应的控制增量，单位 deg
+Rotor tilt input  = 六个短舱倾转角，单位 deg
 ```
 
-示例模型中用两个 Step 信号叠加到总距通道，其余通道先用常数。用户可以把这些块替换为自己的控制器输出。
+生成的模型不包含闭环飞控律。用户可以把常数杆量源替换成操纵器硬件、测试信号或其他开环命令源。
 
 `out.x_sim` 的 12 个状态量顺序为：
 
