@@ -975,8 +975,6 @@ cfg.control_blend.apply_to_trim = true;
 cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
-cfg.control_blend.speed_start_mps = 30;
-cfg.control_blend.speed_end_mps = 50;
 cfg.control_blend.schedule = "sincos";
 cfg.control_blend.rotor_gains = [1 1 1];
 cfg.control_blend.fixed_gains = [-1 1 1];
@@ -2157,8 +2155,6 @@ defaults.apply_to_trim = true;
 defaults.independent_variable = "tilt_angle";
 defaults.tilt_helicopter_deg = 90;
 defaults.tilt_fixedwing_deg = 0;
-defaults.speed_start_mps = 30;
-defaults.speed_end_mps = 50;
 defaults.schedule = "sincos";
 defaults.rotor_gains = [1 1 1];
 defaults.fixed_gains = [-1 1 1];
@@ -2173,19 +2169,15 @@ blend.apply_to_trim = logical(blend.apply_to_trim);
 blend.append_to_B = logical(blend.append_to_B);
 blend.independent_variable = lower(string(blend.independent_variable));
 blend.schedule = lower(string(blend.schedule));
-if ~ismember(blend.independent_variable, ["speed", "tilt", "tilt_angle", "nacelle_tilt"])
+if ~ismember(blend.independent_variable, ["tilt", "tilt_angle", "nacelle_tilt"])
     error('BEMTFLAP:BadControlBlend', ...
-        'cfg.control_blend.independent_variable must be "speed" or "tilt_angle".');
+        'cfg.control_blend.independent_variable must be "tilt_angle".');
 end
 if ~ismember(blend.schedule, ["sincos", "linear", "smoothstep"])
     error('BEMTFLAP:BadControlBlend', 'cfg.control_blend.schedule must be "sincos", "linear", or "smoothstep".');
 end
 blend.rotor_gains = validate_three_vector(blend.rotor_gains, 'cfg.control_blend.rotor_gains');
 blend.fixed_gains = validate_three_vector(blend.fixed_gains, 'cfg.control_blend.fixed_gains');
-if ~isfinite(blend.speed_start_mps) || ~isfinite(blend.speed_end_mps) || blend.speed_end_mps <= blend.speed_start_mps
-    error('BEMTFLAP:BadControlBlend', ...
-        'cfg.control_blend.speed_end_mps must be greater than speed_start_mps.');
-end
 if ~isfinite(blend.tilt_helicopter_deg) || ~isfinite(blend.tilt_fixedwing_deg) || ...
         abs(blend.tilt_fixedwing_deg - blend.tilt_helicopter_deg) < eps
     error('BEMTFLAP:BadControlBlend', ...
@@ -2200,12 +2192,12 @@ if numel(values) ~= 3 || any(~isfinite(values))
 end
 end
 
-function [rotor_controls, fixed_controls, info] = effective_control_channels(trim_var, control_idx, fixed_base, speed_mps, tilt_angle_deg, blend)
+function [rotor_controls, fixed_controls, info] = effective_control_channels(trim_var, control_idx, fixed_base, ~, tilt_angle_deg, blend)
 raw = trim_var(control_idx(1:4));
-[rotor_controls, fixed_controls, info] = resolve_control_channels(raw, fixed_base, speed_mps, tilt_angle_deg, blend);
+[rotor_controls, fixed_controls, info] = resolve_control_channels(raw, fixed_base, tilt_angle_deg, blend);
 end
 
-function [rotor_controls, fixed_controls, info] = resolve_control_channels(raw_controls, fixed_base, speed_mps, tilt_angle_deg, blend)
+function [rotor_controls, fixed_controls, info] = resolve_control_channels(raw_controls, fixed_base, tilt_angle_deg, blend)
 raw_controls = raw_controls(:);
 fixed_base = fixed_base(:);
 if numel(raw_controls) ~= 4
@@ -2215,7 +2207,7 @@ if numel(fixed_base) ~= 3
     error('BEMTFLAP:BadControlVector', 'Fixed-wing control vector must contain 3 values.');
 end
 
-[rotor_weight, fixed_weight] = control_blend_weights(speed_mps, tilt_angle_deg, blend);
+[rotor_weight, fixed_weight] = control_blend_weights(tilt_angle_deg, blend);
 info = struct();
 info.weight = fixed_weight;
 info.rotor_weight = rotor_weight;
@@ -2249,7 +2241,7 @@ fixed_controls(3) = fixed_controls(3) + fixed_weight * fixed_gain(2) * roll_cmd;
 fixed_controls(2) = fixed_controls(2) + fixed_weight * fixed_gain(3) * yaw_cmd;
 end
 
-function [rotor_weight, fixed_weight] = control_blend_weights(speed_mps, tilt_angle_deg, blend)
+function [rotor_weight, fixed_weight] = control_blend_weights(tilt_angle_deg, blend)
 if ~blend.enabled
     rotor_weight = 1;
     fixed_weight = 0;
@@ -2261,12 +2253,9 @@ if blend.schedule == "sincos"
     rotor_weight = min(max(sind(tilt_limited), 0), 1);
     fixed_weight = min(max(cosd(tilt_limited), 0), 1);
     return;
-elseif any(blend.independent_variable == ["tilt", "tilt_angle", "nacelle_tilt"])
+else
     s = (tilt_angle_deg - blend.tilt_helicopter_deg) / ...
         (blend.tilt_fixedwing_deg - blend.tilt_helicopter_deg);
-else
-    s = (speed_mps - blend.speed_start_mps) / ...
-        (blend.speed_end_mps - blend.speed_start_mps);
 end
 s = min(max(s, 0), 1);
 switch blend.schedule
@@ -2300,11 +2289,11 @@ map(7,2) = fixed_weight * fixed_gain(2); % roll -> fixed roll
 map(6,3) = fixed_weight * fixed_gain(3); % yaw -> fixed yaw
 end
 
-function B_blend = blended_control_B(B_physical, B_trim, blend, speed_mps, tilt_angle_deg)
+function B_blend = blended_control_B(B_physical, B_trim, blend, ~, tilt_angle_deg)
 if blend.enabled && blend.apply_to_trim
     B_blend = B_trim(:,2:4);
 else
-    [rotor_weight, fixed_weight] = control_blend_weights(speed_mps, tilt_angle_deg, blend);
+    [rotor_weight, fixed_weight] = control_blend_weights(tilt_angle_deg, blend);
     B_blend = B_physical * control_blend_physical_map(rotor_weight, fixed_weight, blend);
 end
 end

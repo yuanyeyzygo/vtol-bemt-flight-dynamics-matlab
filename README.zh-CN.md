@@ -224,7 +224,7 @@ fixed_yaw_deg   += fixed_weight * fixed_gains(3) * blend_yaw
 
 `rotor_gains` 和 `fixed_gains` 的顺序都是 `[pitch, roll, yaw]`。
 
-为了兼容旧算例，程序仍保留 `linear` 和 `smoothstep`。在这两种模式下，程序先由速度或倾转角计算一个固定翼权重，然后使用 `rotor_weight = 1 - fixed_weight`。
+为了兼容旧算例，程序仍保留 `linear` 和 `smoothstep`。在这两种模式下，程序由短舱倾转角计算一个固定翼权重，然后使用 `rotor_weight = 1 - fixed_weight`。
 
 固定翼舵面通道顺序为 `[fixed_pitch, fixed_yaw, fixed_roll]`，单位为度。当使用 WL/WR/VL/VR 物理舵面查表或 Excel sheet 时，这三个通道会通过 `cfg.controls.surface_mixing_matrix` 映射到物理舵面偏角。如果该矩阵为空，默认映射为：
 

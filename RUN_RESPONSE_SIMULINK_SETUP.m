@@ -89,8 +89,6 @@ cfg.control_blend.apply_to_trim = true;
 cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
-cfg.control_blend.speed_start_mps = 30;
-cfg.control_blend.speed_end_mps = 50;
 cfg.control_blend.schedule = "sincos";
 cfg.control_blend.rotor_gains = [1 1 1];
 cfg.control_blend.fixed_gains = [-1 1 1];
@@ -402,8 +400,6 @@ if isfield(raw, 'apply_to_response')
 else
     blend.apply_to_response = logical(raw.apply_to_trim);
 end
-blend.speed_start_mps = raw.speed_start_mps;
-blend.speed_end_mps = raw.speed_end_mps;
 blend.tilt_helicopter_deg = raw.tilt_helicopter_deg;
 blend.tilt_fixedwing_deg = raw.tilt_fixedwing_deg;
 blend.independent_variable_id = response_control_blend_independent_variable_id(raw.independent_variable);
@@ -414,11 +410,6 @@ if numel(blend.rotor_gains) ~= 3 || numel(blend.fixed_gains) ~= 3
     error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
         'cfg.control_blend.rotor_gains and fixed_gains must each contain three values.');
 end
-if ~(isfinite(blend.speed_start_mps) && isfinite(blend.speed_end_mps)) || ...
-        blend.speed_end_mps <= blend.speed_start_mps
-    error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
-        'cfg.control_blend.speed_end_mps must be greater than speed_start_mps.');
-end
 if ~(isfinite(blend.tilt_helicopter_deg) && isfinite(blend.tilt_fixedwing_deg)) || ...
         abs(blend.tilt_fixedwing_deg - blend.tilt_helicopter_deg) < eps
     error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
@@ -428,13 +419,11 @@ end
 
 function id = response_control_blend_independent_variable_id(name)
 switch lower(string(name))
-    case "speed"
-        id = 1;
     case {"tilt", "tilt_angle", "nacelle_tilt"}
         id = 2;
     otherwise
         error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
-            'cfg.control_blend.independent_variable must be "speed" or "tilt_angle".');
+            'cfg.control_blend.independent_variable must be "tilt_angle".');
 end
 end
 

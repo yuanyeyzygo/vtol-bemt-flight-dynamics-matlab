@@ -224,7 +224,7 @@ fixed_yaw_deg   += fixed_weight * fixed_gains(3) * blend_yaw
 
 Sia `rotor_gains` sia `fixed_gains` sono ordinati come `[pitch, roll, yaw]`.
 
-Le schedulazioni opzionali `linear` e `smoothstep` restano supportate per studi precedenti. In questi modi il codice calcola prima un peso fixed-wing scalare da velocità o tilt, poi usa `rotor_weight = 1 - fixed_weight`.
+Le schedulazioni opzionali `linear` e `smoothstep` restano supportate per studi precedenti. In questi modi il codice calcola un peso fixed-wing scalare dal tilt della nacella, poi usa `rotor_weight = 1 - fixed_weight`.
 
 Il vettore di comando fixed-wing è ordinato come `[fixed_pitch, fixed_yaw, fixed_roll]` in gradi. Quando si usano tabelle lookup o fogli Excel per superfici fisiche WL/WR/VL/VR, questi tre canali sono mappati alle deflessioni fisiche tramite `cfg.controls.surface_mixing_matrix`. Se la matrice è vuota, il mapping default è:
 

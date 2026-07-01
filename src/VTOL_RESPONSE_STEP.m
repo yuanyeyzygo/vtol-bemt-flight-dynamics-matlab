@@ -458,7 +458,7 @@ end
 tau_s = max(tau_s, 1e-6);
 end
 
-function [rotor_controls, fixed_controls] = response_effective_control_channels_step(raw_controls, fixed_base, x, rotor_tilt_angles, sim_model)
+function [rotor_controls, fixed_controls] = response_effective_control_channels_step(raw_controls, fixed_base, ~, rotor_tilt_angles, sim_model)
 if ~isfield(sim_model, 'control_blend')
     rotor_controls = raw_controls(:);
     fixed_controls = fixed_base(:);
@@ -473,8 +473,7 @@ if ~blend.enabled || ~blend.apply_to_response
 end
 
 tilt_angle_deg = mean(rotor_tilt_angles(:));
-speed_mps = sqrt(x(1)^2 + x(2)^2 + x(3)^2);
-[rotor_weight, fixed_weight] = response_control_blend_weights_step(speed_mps, tilt_angle_deg, blend);
+[rotor_weight, fixed_weight] = response_control_blend_weights_step(tilt_angle_deg, blend);
 
 collective = raw_controls(1);
 pitch_cmd = raw_controls(2);
@@ -493,7 +492,7 @@ fixed_controls(3) = fixed_controls(3) + fixed_weight * blend.fixed_gains(2) * ro
 fixed_controls(2) = fixed_controls(2) + fixed_weight * blend.fixed_gains(3) * yaw_cmd;
 end
 
-function [rotor_weight, fixed_weight] = response_control_blend_weights_step(speed_mps, tilt_angle_deg, blend)
+function [rotor_weight, fixed_weight] = response_control_blend_weights_step(tilt_angle_deg, blend)
 switch blend.schedule_id
     case 3
         tilt_min = min(blend.tilt_helicopter_deg, blend.tilt_fixedwing_deg);
@@ -503,13 +502,8 @@ switch blend.schedule_id
         fixed_weight = min(max(cosd(tilt_limited), 0), 1);
         return;
     otherwise
-        if blend.independent_variable_id == 2
-            s = (tilt_angle_deg - blend.tilt_helicopter_deg) / ...
-                (blend.tilt_fixedwing_deg - blend.tilt_helicopter_deg);
-        else
-            s = (speed_mps - blend.speed_start_mps) / ...
-                (blend.speed_end_mps - blend.speed_start_mps);
-        end
+        s = (tilt_angle_deg - blend.tilt_helicopter_deg) / ...
+            (blend.tilt_fixedwing_deg - blend.tilt_helicopter_deg);
 end
 s = min(max(s, 0), 1);
 switch blend.schedule_id

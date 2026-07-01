@@ -224,7 +224,7 @@ fixed_yaw_deg   += fixed_weight * fixed_gains(3) * blend_yaw
 
 Both `rotor_gains` and `fixed_gains` are ordered as `[pitch, roll, yaw]`.
 
-The optional `linear` and `smoothstep` schedules are still supported for older studies. In those modes the code first computes a scalar fixed-wing weight from speed or tilt angle, then uses `rotor_weight = 1 - fixed_weight`.
+The optional `linear` and `smoothstep` schedules are still supported for older studies. In those modes the code computes a scalar fixed-wing weight from nacelle tilt angle, then uses `rotor_weight = 1 - fixed_weight`.
 
 The fixed-wing command vector is ordered as `[fixed_pitch, fixed_yaw, fixed_roll]` in degrees. When WL/WR/VL/VR physical-surface lookup or Excel sheets are used, these three channels are mapped to physical surface deflections by `cfg.controls.surface_mixing_matrix`. If that matrix is empty, the default mapping is:
 
