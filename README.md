@@ -30,7 +30,6 @@ Private aerodynamic lookup data are not included. The code can run in `default` 
 | Check state, control, and output ordering | [Trim Outputs](#trim-outputs), [Simulink Response](#simulink-response) | `trim_results`, `out.x_sim` |
 | Add custom lookup tables | [Lookup Data](#lookup-data) | `data/` |
 | Add an Excel aerodynamic database | [Excel Aerodynamic Database](#excel-aerodynamic-database) | `data_templates/` |
-| Confirm what should not be published | [Public Repository Policy](#public-repository-policy) | `.gitignore` |
 
 ## Entry-Point Map
 
@@ -487,21 +486,3 @@ Older Excel files that still include a `Mach` column in these fuselage/control-s
 Excel sheets may include text headers and notes; the MATLAB reader keeps only complete numeric rows. The numeric rows must still form a complete interpolation grid for every independent variable in the sheet.
 
 This repository may include format examples and synthetic placeholder values, but not private aerodynamic data.
-
-## Public Repository Policy
-
-The repository should not include:
-
-```text
-data/
-legacy/
-examples/ that require private data
-*.mat result/cache files
-*.zip packages
-slprj/
-codegen_mex*/
-*.mexw64
-*.slxc
-```
-
-Users should generate MEX files locally by running `RUN_RESPONSE_SIMULINK_SETUP`.

@@ -30,7 +30,6 @@ Les données aérodynamiques privées de lookup ne sont pas incluses. Le code pe
 | Vérifier l'ordre des états, commandes et sorties | [Sorties de trim](#sorties-de-trim), [Réponse Simulink](#réponse-simulink) | `trim_results`, `out.x_sim` |
 | Ajouter des tables lookup txt | [Données lookup](#données-lookup) | `data/` |
 | Ajouter une base aérodynamique Excel | [Base aérodynamique Excel](#base-aérodynamique-excel) | `data_templates/` |
-| Confirmer ce qui ne doit pas être publié | [Politique du dépôt public](#politique-du-dépôt-public) | `.gitignore` |
 
 ## Carte Des Points D'Entrée
 
@@ -487,21 +486,3 @@ Les anciens fichiers Excel qui contiennent encore une colonne `Mach` dans ces fe
 Les feuilles Excel peuvent contenir des en-têtes et des notes textuelles ; le lecteur MATLAB ne conserve que les lignes numériques complètes. Les lignes numériques doivent toutefois former une grille d'interpolation complète pour chaque variable indépendante de la feuille.
 
 Ce dépôt peut inclure des exemples de format et des valeurs synthétiques de démonstration, mais pas de données aérodynamiques privées.
-
-## Politique du dépôt public
-
-Le dépôt ne doit pas inclure :
-
-```text
-data/
-legacy/
-examples/ that require private data
-*.mat result/cache files
-*.zip packages
-slprj/
-codegen_mex*/
-*.mexw64
-*.slxc
-```
-
-Les utilisateurs doivent générer les fichiers MEX localement en exécutant `RUN_RESPONSE_SIMULINK_SETUP`.

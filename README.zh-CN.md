@@ -30,7 +30,6 @@
 | 查看状态、操纵和输出顺序 | [配平输出](#配平输出)、[Simulink 响应](#simulink-响应) | `trim_results`, `out.x_sim` |
 | 添加自定义 txt 查表 | [查表数据](#查表数据) | `data/` |
 | 添加 Excel 气动数据库 | [Excel 气动数据库](#excel-气动数据库) | `data_templates/` |
-| 确认哪些内容不能发布 | [开源仓库数据原则](#开源仓库数据原则) | `.gitignore` |
 
 ## 入口文件速查
 
@@ -487,21 +486,3 @@ deflection_deg   alpha_deg   dCD   dCL   dCm   dCC   dCn   dCl
 Excel sheet 中可以包含文本表头和说明；MATLAB 读取时只保留完整数值行。但是数值行必须覆盖该 sheet 中所有自变量的完整插值网格。
 
 本仓库可以包含格式示例和合成占位数值，但不包含私有气动数据。
-
-## 开源仓库数据原则
-
-仓库不应包含：
-
-```text
-data/
-legacy/
-examples/ that require private data
-*.mat result/cache files
-*.zip packages
-slprj/
-codegen_mex*/
-*.mexw64
-*.slxc
-```
-
-用户应通过运行 `RUN_RESPONSE_SIMULINK_SETUP` 在本地生成 MEX 文件。

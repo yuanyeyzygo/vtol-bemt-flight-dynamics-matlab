@@ -30,7 +30,6 @@ I dati aerodinamici privati di lookup non sono inclusi. Il codice può funzionar
 | Controllare l'ordine di stati, comandi e uscite | [Output del trim](#output-del-trim), [Risposta Simulink](#risposta-simulink) | `trim_results`, `out.x_sim` |
 | Aggiungere tabelle lookup txt | [Dati lookup](#dati-lookup) | `data/` |
 | Aggiungere un database aerodinamico Excel | [Database aerodinamico Excel](#database-aerodinamico-excel) | `data_templates/` |
-| Confermare cosa non va pubblicato | [Policy del repository pubblico](#policy-del-repository-pubblico) | `.gitignore` |
 
 ## Mappa Dei Punti Di Ingresso
 
@@ -487,21 +486,3 @@ I vecchi file Excel che includono ancora una colonna `Mach` in questi fogli fuso
 I fogli Excel possono includere intestazioni testuali e note; il lettore MATLAB conserva solo righe numeriche complete. Le righe numeriche devono comunque formare una griglia di interpolazione completa per ogni variabile indipendente nel foglio.
 
 Questo repository può includere esempi di formato e valori sintetici placeholder, ma non dati aerodinamici privati.
-
-## Policy del repository pubblico
-
-Il repository non deve includere:
-
-```text
-data/
-legacy/
-examples/ that require private data
-*.mat result/cache files
-*.zip packages
-slprj/
-codegen_mex*/
-*.mexw64
-*.slxc
-```
-
-Gli utenti devono generare i file MEX localmente eseguendo `RUN_RESPONSE_SIMULINK_SETUP`.
