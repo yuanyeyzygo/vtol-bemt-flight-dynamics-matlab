@@ -192,7 +192,6 @@ trim_results.speed_mps
 当前默认过渡操纵分配按短舱倾转角调度：
 
 ```matlab
-cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
 cfg.control_blend.schedule = "sincos";

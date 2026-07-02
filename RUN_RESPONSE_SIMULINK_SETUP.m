@@ -47,9 +47,7 @@ cfg.data.aero.base_sheets = {};
 cfg.data.aero.base_sheet_tilt_angle_deg = [];
 cfg.data.aero.control_surface_sheets = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.data.chord.txt_file = 'Chord.txt';
-cfg.data.chord.mat_var = 'F';
 cfg.data.pretwist.txt_file = 'Pretwist.txt';
-cfg.data.pretwist.mat_var = 'pre_twist';
 
 cfg.environment.rho_kg_m3 = 1.225;
 cfg.environment.gravity_m_s2 = 9.81;
@@ -60,7 +58,7 @@ cfg.environment.altitude_max_m = 20000;
 cfg.vehicle.mass_kg = 1900;
 cfg.vehicle.inertia_kg_m2 = [1966.5, 5245.3, 3282.7];
 
-cfg.rotor.radius_m = 1.3;     %%%Rotor radius
+cfg.rotor.radius_m = 1.5;     %%%Rotor radius
 cfg.rotor.blade_count = 5;
 cfg.rotor.omega_rad_s = 90;    %%% rotational speed
 cfg.rotor.flap_inertia_kg_m2 = 2.25;
@@ -86,13 +84,11 @@ cfg.controls.surface_mixing_matrix = [];
 cfg.controls.surface_bias_deg = [];
 cfg.control_blend.enabled = true;
 cfg.control_blend.apply_to_trim = true;
-cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
 cfg.control_blend.schedule = "sincos";
 cfg.control_blend.rotor_gains = [1 1 1];
 cfg.control_blend.fixed_gains = [-1 1 1];
-cfg.control_blend.append_to_B = true;
 
 cfg.aero.dynamic_derivatives.enabled = true; %%%fuselage dynamic derivative Can be set as zero if information is not available
 cfg.aero.dynamic_derivatives.CLq = 7.39;
@@ -106,7 +102,6 @@ cfg.aero.dynamic_derivatives.Cyr = 0.32;
 cfg.aero.dynamic_derivatives.Cma_dot = -8.41;
 cfg.aero.dynamic_derivatives.Cn_beta_dot = -0.0;
 cfg.aero.dynamic_derivatives.alpha_beta_dot_mode = "kinematic";
-cfg.aero.dynamic_derivatives.alpha_beta_dot_mode_id = 1;
 cfg.aero.dynamic_derivatives.min_velocity_mps = 1e-6;
 
 cfg.trim.tilt_angle_deg = 90;  %%%Tilt rotor angle
@@ -115,8 +110,6 @@ cfg.trim.speed_mps = 0;
 cfg.trim.use_previous_solution = true;
 cfg.trim.max_iterations = 30;
 cfg.trim.tol = 1e-7;
-cfg.stability.max_iterations = 1;
-cfg.stability.tol = 1e-7;
 cfg.output.verbose = false;
 
 cfg.initial.uvw_earth_mps = [cfg.trim.speed_mps(1) 0 0]; %%% Starting point speed, earth coordinate
@@ -132,21 +125,17 @@ cfg.trim.initial.yaw_deg = 0;
 cfg.trim.initial.pitch_rad = -0.01;
 cfg.trim.initial.roll_rad = 0;
 
-cfg.response.enabled = true;
-cfg.response.skip_stability = true;
-cfg.response.duration_s = 0;
 cfg.response.dt_s = requested_response_dt_s;
 cfg.response.aircraft_integrator = "rk4";
-cfg.response.update_rotor_states = true;
 cfg.response.initial_state_delta = zeros(12,1);
 cfg.response.pilot_stick = zeros(4,1); % [collective pitch roll yaw], normalized stick input
 cfg.response.pilot_stick_to_control_gain_deg = [6 7 7 6]; % open-loop stick-to-control scale, deg at full stick
 cfg.response.control_delta = zeros(4,1); % internal/debug direct control increment, normally zero
 cfg.response.rotor_tilt_angle_deg = [];
 cfg.response.fixed_wing_control_delta = zeros(3,1); % fixed-wing [pitch yaw roll] channel increments, deg
-cfg.response.step_time_s = 0;
 cfg.response.compile_mex = lower(string(cfg.rotor.flap_model)) == "disk";
 cfg = merge_cfg_override(cfg, requested_sim_setup_overrides);
+cfg = force_simulink_setup_response_mode(cfg);
 
 run(fullfile(root, 'src', 'BEMTFLAP_SWITCHED.m'));
 
@@ -182,6 +171,16 @@ assignin('base', 'rotor_tilt_angle_deg', sim_init.rotor_tilt_angle_deg(:));
 assignin('base', 'fixed_control_delta', sim_init.fixed_control_delta(:));
 assignin('base', 'dt_sim', sim_init.dt_s);
 assignin('base', 'sim_model', sim_init.model);
+end
+
+function cfg = force_simulink_setup_response_mode(cfg)
+% Ask BEMTFLAP_SWITCHED for a trim-consistent response initial state only.
+% These are not user-facing Simulink response settings.
+cfg.response.enabled = true;
+cfg.response.skip_stability = true;
+cfg.response.duration_s = 0;
+cfg.response.update_rotor_states = false;
+cfg.response.step_time_s = 0;
 end
 
 function sim_init = compile_fast_disk_mex_for_current_setup(root, sim_init)
@@ -402,7 +401,6 @@ else
 end
 blend.tilt_helicopter_deg = raw.tilt_helicopter_deg;
 blend.tilt_fixedwing_deg = raw.tilt_fixedwing_deg;
-blend.independent_variable_id = response_control_blend_independent_variable_id(raw.independent_variable);
 blend.schedule_id = response_control_blend_schedule_id(raw.schedule);
 blend.rotor_gains = raw.rotor_gains(:);
 blend.fixed_gains = raw.fixed_gains(:);
@@ -414,16 +412,6 @@ if ~(isfinite(blend.tilt_helicopter_deg) && isfinite(blend.tilt_fixedwing_deg)) 
         abs(blend.tilt_fixedwing_deg - blend.tilt_helicopter_deg) < eps
     error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
         'cfg.control_blend tilt endpoints must be finite and different.');
-end
-end
-
-function id = response_control_blend_independent_variable_id(name)
-switch lower(string(name))
-    case {"tilt", "tilt_angle", "nacelle_tilt"}
-        id = 2;
-    otherwise
-        error('RUN_RESPONSE_SIMULINK_SETUP:BadControlBlend', ...
-            'cfg.control_blend.independent_variable must be "tilt_angle".');
 end
 end
 

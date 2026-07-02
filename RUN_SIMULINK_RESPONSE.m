@@ -3,7 +3,17 @@ if exist('flap_model_override', 'var')
 else
     requested_flap_model = "";
 end
-clearvars -except requested_flap_model;
+if exist('response_dt_s_override', 'var')
+    requested_response_dt_s = response_dt_s_override;
+else
+    requested_response_dt_s = [];
+end
+if exist('sim_setup_overrides', 'var')
+    requested_sim_setup_overrides = sim_setup_overrides;
+else
+    requested_sim_setup_overrides = struct();
+end
+clearvars -except requested_flap_model requested_response_dt_s requested_sim_setup_overrides;
 clc;
 
 root = fileparts(mfilename('fullpath'));
@@ -13,16 +23,17 @@ cd(root);
 if requested_flap_model ~= ""
     flap_model_override = requested_flap_model;
 end
-RUN_RESPONSE_SIMULINK_SETUP;
-
-model = 'VTOL_RESPONSE_SIMULINK';
-if exist([model '.slx'], 'file') == 0
-    if requested_flap_model ~= ""
-        CREATE_RESPONSE_SIMULINK_MODEL(requested_flap_model);
-    else
-        CREATE_RESPONSE_SIMULINK_MODEL;
-    end
+if ~isempty(requested_response_dt_s)
+    response_dt_s_override = requested_response_dt_s;
 end
+if ~isfield(requested_sim_setup_overrides, 'response') || ~isstruct(requested_sim_setup_overrides.response)
+    requested_sim_setup_overrides.response = struct();
+end
+requested_sim_setup_overrides.response.compile_mex = false;
+sim_setup_overrides = requested_sim_setup_overrides;
+RUN_RESPONSE_SIMULINK_SETUP;
+model = 'VTOL_RESPONSE_SIMULINK';
+CREATE_RESPONSE_SIMULINK_MODEL;
 
 load_system(model);
 out = sim(model);

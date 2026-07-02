@@ -33,9 +33,7 @@ cfg.data.aero.base_sheets = {};
 cfg.data.aero.base_sheet_tilt_angle_deg = [];
 cfg.data.aero.control_surface_sheets = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.data.chord.txt_file = 'Chord.txt';
-cfg.data.chord.mat_var = 'F';
 cfg.data.pretwist.txt_file = 'Pretwist.txt';
-cfg.data.pretwist.mat_var = 'pre_twist';
 
 cfg.environment.rho_kg_m3 = 1.225;
 cfg.environment.gravity_m_s2 = 9.81;
@@ -82,7 +80,6 @@ cfg.aero.dynamic_derivatives.Cyr = 0.3244426;
 cfg.aero.dynamic_derivatives.Cma_dot = -8.41039495;
 cfg.aero.dynamic_derivatives.Cn_beta_dot = -0.0513592;
 cfg.aero.dynamic_derivatives.alpha_beta_dot_mode = "kinematic";
-cfg.aero.dynamic_derivatives.alpha_beta_dot_mode_id = 1;
 cfg.aero.dynamic_derivatives.min_velocity_mps = 1e-6;
 
 cfg.trim.tilt_angle_deg = 90;

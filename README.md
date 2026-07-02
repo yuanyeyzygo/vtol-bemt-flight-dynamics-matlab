@@ -192,7 +192,6 @@ If `cfg.control_blend.enabled = true` and `cfg.control_blend.apply_to_trim = tru
 The current default transition schedule is based on nacelle tilt angle:
 
 ```matlab
-cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
 cfg.control_blend.schedule = "sincos";

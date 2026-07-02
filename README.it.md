@@ -192,7 +192,6 @@ Se `cfg.control_blend.enabled = true` e `cfg.control_blend.apply_to_trim = true`
 La schedulazione di transizione default corrente è basata sull'angolo di tilt della nacella:
 
 ```matlab
-cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
 cfg.control_blend.schedule = "sincos";

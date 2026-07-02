@@ -46,11 +46,7 @@ cfg.data.aero.base_sheets = {}; % split-sheet format example: {'base_0','base_30
 cfg.data.aero.base_sheet_tilt_angle_deg = []; % example for split sheets: [0 30 60 90]
 cfg.data.aero.control_surface_sheets = {'WL1','WL2','WR1','WR2','VL1','VL2','VR1','VR2'};
 cfg.data.chord.txt_file = 'Chord.txt';              % r/R, chord_m
-%cfg.data.chord.mat_file = 'chord_interp.mat';       % legacy c/R fallback
-cfg.data.chord.mat_var = 'F';
 cfg.data.pretwist.txt_file = 'Pretwist.txt';        % r/R, twist_deg
-%cfg.data.pretwist.mat_file = 'pretwist_interp.mat';
-cfg.data.pretwist.mat_var = 'pre_twist';
 
 % Environment and vehicle
 cfg.environment.rho_kg_m3 = 1.225;
@@ -99,13 +95,11 @@ cfg.controls.surface_bias_deg = [];
 % so 90 deg is pure rotor control and 0 deg is pure fixed-wing control.
 cfg.control_blend.enabled = true;
 cfg.control_blend.apply_to_trim = true;
-cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
 cfg.control_blend.schedule = "sincos"; % "sincos", "linear", or "smoothstep"
 cfg.control_blend.rotor_gains = [1 1 1]; % [pitch roll yaw] -> [longitudinal lateral yaw]
 cfg.control_blend.fixed_gains = [-1 1 1]; % [pitch roll yaw] sign/scale for fixed-wing channels
-cfg.control_blend.append_to_B = true;
 
 % Fuselage/wing dynamic aerodynamic derivatives. Rates use the standard
 % nondimensional forms p*b/(2V), q*c/(2V), r*b/(2V).
@@ -121,22 +115,7 @@ cfg.aero.dynamic_derivatives.Cyr = 0.3244426;
 cfg.aero.dynamic_derivatives.Cma_dot = -8.41039495;
 cfg.aero.dynamic_derivatives.Cn_beta_dot = -0.0513592;
 cfg.aero.dynamic_derivatives.alpha_beta_dot_mode = "kinematic"; % "kinematic" or "zero"
-cfg.aero.dynamic_derivatives.alpha_beta_dot_mode_id = 1;        % 1=kinematic, 0=zero
 cfg.aero.dynamic_derivatives.min_velocity_mps = 1e-6;
-
-% Nonlinear response settings. RUN_ME leaves this disabled; RUN_RESPONSE.m
-% enables it and skips the stability derivative calculation.
-cfg.response.enabled = false;
-cfg.response.skip_stability = false;
-cfg.response.duration_s = 5;
-cfg.response.dt_s = 0.05;
-cfg.response.aircraft_integrator = "rk4";
-cfg.response.update_rotor_states = true;
-cfg.response.initial_state_delta = zeros(12,1); % [u v w p q r phi theta psi x y z]
-cfg.response.control_delta = zeros(4,1);        % [collective longitudinal lateral yaw], deg
-cfg.response.rotor_tilt_angle_deg = [];         % empty -> use trim rotor tilt angles, deg
-cfg.response.fixed_wing_control_delta = zeros(3,1); % fixed-wing [pitch yaw roll] channel increments, deg
-cfg.response.step_time_s = 0;
 
 % Trim case
 cfg.trim.tilt_angle_deg = 90;       % scalar airframe/CG/fuselage lookup tilt
@@ -168,8 +147,6 @@ cfg.trim.initial.roll_rad = 0;
 cfg.defaults.geometry.x_cg_mm = 3554.3;
 cfg.defaults.geometry.y_cg_mm = 0;
 cfg.defaults.geometry.z_cg_mm = -588.7;
-cfg.defaults.geometry.first_rotor_x_mm = 430;
-cfg.defaults.geometry.first_rotor_z_mm = -1900;
 % Default rotor-position formula coefficients, one row per rotor:
 % [x0 x_cos x_sin y z0 z_cos z_sin], mm, where
 % x = x0 + x_cos*cos(tilt) + x_sin*sin(tilt)

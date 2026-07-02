@@ -11,10 +11,26 @@ cd(root);
 
 if nargin >= 1 && ~isempty(flap_model)
     flap_model_override = string(flap_model); %#ok<NASGU>
+    need_setup = true;
+else
+    need_setup = ~evalin('base', ...
+        ['exist(''sim_model'',''var'') == 1 && ' ...
+         '(isfield(sim_model, ''flap_model'') || isfield(sim_model, ''flap_model_id'')) && ' ...
+         'exist(''sim_init'',''var'') == 1 && ' ...
+         'exist(''x0'',''var'') == 1 && ' ...
+         'exist(''rotor_state0'',''var'') == 1']);
 end
-RUN_RESPONSE_SIMULINK_SETUP;
+if need_setup
+    RUN_RESPONSE_SIMULINK_SETUP;
+end
 sim_model_local = evalin('base', 'sim_model');
-model_flap_model = string(sim_model_local.flap_model);
+if isfield(sim_model_local, 'flap_model')
+    model_flap_model = string(sim_model_local.flap_model);
+elseif isfield(sim_model_local, 'flap_model_id') && sim_model_local.flap_model_id == 1
+    model_flap_model = "blade";
+else
+    model_flap_model = "disk";
+end
 
 model = 'VTOL_RESPONSE_SIMULINK';
 model_file = fullfile(root, [model '.slx']);

@@ -192,7 +192,6 @@ Si `cfg.control_blend.enabled = true` et `cfg.control_blend.apply_to_trim = true
 La loi de transition par défaut actuelle est basée sur l'angle de basculement nacelle :
 
 ```matlab
-cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
 cfg.control_blend.schedule = "sincos";

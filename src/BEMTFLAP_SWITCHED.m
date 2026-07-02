@@ -59,7 +59,7 @@ tilt_angle_4 = rotor_tilt_angles(4);
 tilt_angle_5 = rotor_tilt_angles(5);
 tilt_angle_6 = rotor_tilt_angles(6);
 
-[x_cg, y_cg, z_cg, first_rotor_x, first_rotor_z, rotor_position_lookup] = setup_legacy_geometry(cfg, data_dir);
+[x_cg, y_cg, z_cg, rotor_position_lookup] = setup_legacy_geometry(cfg, data_dir);
 fuselage_reference_m = setup_fuselage_reference(cfg);
 fuselage_geometry = setup_fuselage_geometry(cfg);
 rotor_bemt_options = setup_rotor_bemt_options(cfg, rho);
@@ -216,7 +216,7 @@ end
 
     for k=1:cfg.trim.max_iterations
         
-        [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, first_rotor_x, first_rotor_z, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
+        [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
         velo=earth2body(velo1,Trim_var,Trim_var(pitch_idx));
         velo2=velo;
         [rotor_controls_eff, fixed_controls_eff] = effective_control_channels(Trim_var, control_idx, Veh_con, velo1(1), tilt_angle, control_blend);
@@ -267,7 +267,7 @@ end
         for i=1:total_trim_vars
             delta=0.001;
             Trim_var(i)=Trim_var(i)+delta;
-            [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, first_rotor_x, first_rotor_z, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
+            [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
             velo=earth2body(velo1,Trim_var,Trim_var(pitch_idx));
             [rotor_controls_eff, fixed_controls_eff] = effective_control_channels(Trim_var, control_idx, Veh_con, velo1(1), tilt_angle, control_blend);
             [theta0_1,theta0_2,theta0_3,theta0_4,theta0_5,theta0_6]=control_allocation(rotor_controls_eff);
@@ -325,7 +325,7 @@ end
     % Recompute the trim-point forces after the last Newton update. The
     % stability finite differences must subtract forces from the same
     % Trim_var used as the perturbation baseline.
-    [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, first_rotor_x, first_rotor_z, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
+    [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
     velo = earth2body(velo1, Trim_var, Trim_var(pitch_idx));
     velo2 = velo;
     [rotor_controls_eff, fixed_controls_eff] = effective_control_channels(Trim_var, control_idx, Veh_con, velo1(1), tilt_angle, control_blend);
@@ -498,7 +498,7 @@ end
         %velo = earth2body(velo1, Trim_var, Trim_var(pitch_idx));
         [rotor_controls_eff, fixed_controls_eff] = effective_control_channels(Trim_var, control_idx, Veh_con, velo1(1), tilt_angle, control_blend);
         [theta0_1, theta0_2, theta0_3, theta0_4, theta0_5, theta0_6] = control_allocation(rotor_controls_eff);
-        [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, first_rotor_x, first_rotor_z, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
+        [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
 
         % baseline residuals and forces
         [errors12, forces21, beta_vals1, dbeta_vals1, power7,  ATT11] = rotor_bemt_eval(Trim_var(r1,1),   R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_1, tilt_angle_1, angular_velocity, rotational_direction_1, acceleration, angular_acc, rotor_bemt_options, X1_LOC);
@@ -565,7 +565,7 @@ end
 
     [rotor_controls_eff, fixed_controls_eff] = effective_control_channels(Trim_var, control_idx, Veh_con, velo1(1), tilt_angle, control_blend);
     [theta0_1, theta0_2, theta0_3, theta0_4, theta0_5, theta0_6] = control_allocation(rotor_controls_eff);
-    [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, first_rotor_x, first_rotor_z, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
+    [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry);
     [errors12, forces21, beta_vals1, dbeta_vals1, power7,  ATT11] = rotor_bemt_eval(Trim_var(r1,1),   R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_1, tilt_angle_1, angular_velocity, rotational_direction_1, acceleration, angular_acc, rotor_bemt_options, X1_LOC);
     [errors22, forces22, beta_vals2, dbeta_vals2, power8,  ATT21] = rotor_bemt_eval(Trim_var(r2,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_2, tilt_angle_2, angular_velocity, rotational_direction_2, acceleration, angular_acc, rotor_bemt_options, X2_LOC);
     [errors32, forces23, beta_vals3, dbeta_vals3, power9,  ATT31] = rotor_bemt_eval(Trim_var(r3,1),  R, Nb, omega, I_beta, velo, k_beta, rotor_profile, theta0_3, tilt_angle_3, angular_velocity, rotational_direction_3, acceleration, angular_acc, rotor_bemt_options, X3_LOC);
@@ -924,8 +924,6 @@ cfg.response.step_time_s = 0;
 cfg.defaults.geometry.x_cg_mm = 3554.3;
 cfg.defaults.geometry.y_cg_mm = 0;
 cfg.defaults.geometry.z_cg_mm = -588.7;
-cfg.defaults.geometry.first_rotor_x_mm = 430;
-cfg.defaults.geometry.first_rotor_z_mm = -1900;
 cfg.defaults.geometry.rotor_position_coeffs_mm = [
     3600.0  -750.0      0.0   6000  -1290.0     0.0  -750.0
     1303.4  -269.3    -47.5   2500  -1303.4   -40.7  -542.5
@@ -940,11 +938,7 @@ cfg.defaults.chord_m = 0.20264354;
 cfg.defaults.pretwist_root_deg = 19.279996;
 cfg.defaults.pretwist_tip_deg = -6.276289;
 cfg.data.chord.txt_file = 'Chord.txt';
-cfg.data.chord.mat_file = 'chord_interp.mat';
-cfg.data.chord.mat_var = 'F';
 cfg.data.pretwist.txt_file = 'Pretwist.txt';
-cfg.data.pretwist.mat_file = 'pretwist_interp.mat';
-cfg.data.pretwist.mat_var = 'pre_twist';
 cfg.data.aero.excel_file = 'V16_aero_database_clean.xlsx';
 cfg.data.aero.base_sheet = 'base_aero';
 cfg.data.aero.base_sheets = {};
@@ -972,13 +966,11 @@ cfg.controls.surface_bias_deg = [];
 
 cfg.control_blend.enabled = false;
 cfg.control_blend.apply_to_trim = true;
-cfg.control_blend.independent_variable = "tilt_angle";
 cfg.control_blend.tilt_helicopter_deg = 90;
 cfg.control_blend.tilt_fixedwing_deg = 0;
 cfg.control_blend.schedule = "sincos";
 cfg.control_blend.rotor_gains = [1 1 1];
 cfg.control_blend.fixed_gains = [-1 1 1];
-cfg.control_blend.append_to_B = true;
 
 cfg.aero.dynamic_derivatives.enabled = true;
 cfg.aero.dynamic_derivatives.CLq = 7.3939521;
@@ -992,7 +984,6 @@ cfg.aero.dynamic_derivatives.Cyr = 0.3244426;
 cfg.aero.dynamic_derivatives.Cma_dot = -8.41039495;
 cfg.aero.dynamic_derivatives.Cn_beta_dot = -0.0513592;
 cfg.aero.dynamic_derivatives.alpha_beta_dot_mode = "kinematic";
-cfg.aero.dynamic_derivatives.alpha_beta_dot_mode_id = 1;
 cfg.aero.dynamic_derivatives.min_velocity_mps = 1e-6;
 
 cfg.defaults.controls.elevator = [0.00458257, 0.11334677, -0.33342761];
@@ -1250,14 +1241,12 @@ if ~isequal(size(geom.coeffs_mm), [6 7]) || any(~isfinite(geom.coeffs_mm(:)))
 end
 end
 
-function [x_cg, y_cg, z_cg, first_rotor_x, first_rotor_z, rotor_position_lookup] = setup_legacy_geometry(cfg, data_dir)
+function [x_cg, y_cg, z_cg, rotor_position_lookup] = setup_legacy_geometry(cfg, data_dir)
 rotor_position_lookup = [];
 geom = cfg.defaults.geometry;
 x_cg = @(tilt) geom.x_cg_mm + 0.*tilt;
 y_cg = @(tilt) geom.y_cg_mm + 0.*tilt;
 z_cg = @(tilt) geom.z_cg_mm + 0.*tilt;
-first_rotor_x = @(tilt) geom.first_rotor_x_mm + 0.*tilt;
-first_rotor_z = @(tilt) geom.first_rotor_z_mm + 0.*tilt;
 if is_lookup_mode(cfg.switch.geometry)
     cg_file = fullfile(data_dir, 'CG_positions.txt');
     if isfield(cfg, 'data') && isfield(cfg.data, 'geometry') && isfield(cfg.data.geometry, 'cg_file')
@@ -1271,16 +1260,6 @@ if is_lookup_mode(cfg.switch.geometry)
     else
         x_cg = load_mat_object(data_dir, 'x_cg.mat', 'x_cg');
         z_cg = load_mat_object(data_dir, 'z_cg.mat', 'z_cg');
-    end
-    if ~is_lookup_mode(cfg.switch.rotor_positions)
-        first_rotor_x_file = fullfile(data_dir, 'first_rotor_x.mat');
-        first_rotor_z_file = fullfile(data_dir, 'first_rotor_z.mat');
-        if exist(first_rotor_x_file, 'file') == 2
-            first_rotor_x = load_mat_object(data_dir, 'first_rotor_x.mat', 'first_rotor_x');
-        end
-        if exist(first_rotor_z_file, 'file') == 2
-            first_rotor_z = load_mat_object(data_dir, 'first_rotor_z.mat', 'first_rotor_z');
-        end
     end
 end
 
@@ -2152,7 +2131,6 @@ end
 function blend = setup_control_blend(cfg)
 defaults.enabled = false;
 defaults.apply_to_trim = true;
-defaults.independent_variable = "tilt_angle";
 defaults.tilt_helicopter_deg = 90;
 defaults.tilt_fixedwing_deg = 0;
 defaults.schedule = "sincos";
@@ -2167,12 +2145,7 @@ end
 blend.enabled = logical(blend.enabled);
 blend.apply_to_trim = logical(blend.apply_to_trim);
 blend.append_to_B = logical(blend.append_to_B);
-blend.independent_variable = lower(string(blend.independent_variable));
 blend.schedule = lower(string(blend.schedule));
-if ~ismember(blend.independent_variable, ["tilt", "tilt_angle", "nacelle_tilt"])
-    error('BEMTFLAP:BadControlBlend', ...
-        'cfg.control_blend.independent_variable must be "tilt_angle".');
-end
 if ~ismember(blend.schedule, ["sincos", "linear", "smoothstep"])
     error('BEMTFLAP:BadControlBlend', 'cfg.control_blend.schedule must be "sincos", "linear", or "smoothstep".');
 end
@@ -2808,7 +2781,7 @@ function dx = solve_bordered_jacobian(J, neg_F)
 
     dx = [dx1; dx2];
 end
-function [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, ~, ~, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry)
+function [X1_LOC, X2_LOC, X3_LOC, X4_LOC, X5_LOC, X6_LOC, X_CCG] = rotor_locations(rotor_tilt_angles, XCG, rotor_position_lookup, fuselage_reference_m, default_rotor_geometry)
 
     XCG = XCG(:).';
     if nargin < 6 || isempty(fuselage_reference_m)
